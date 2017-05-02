@@ -6,8 +6,12 @@ import gym
 
 from IPython.core.debugger import Tracer
 
-OBSERVATION_SIZE = 210 * 160
+OBSERVATION_SIZE = 6400
 HIDDEN_LAYER_SIZE = 200
+
+UP_ACTION = 2
+DOWN_ACTION = 3
+action_dict = {DOWN_ACTION: 0, UP_ACTION: 1}
 
 sess = tf.InteractiveSession()
 x = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE], name='x')
@@ -30,6 +34,17 @@ env = gym.make('Pong-v0')
 initial_action = env.action_space.sample()
 action = initial_action
 
+def prepro(I):
+  """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
+  """https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5"""
+  I = I[35:195] # crop
+  I = I[::2,::2,0] # downsample by factor of 2
+  I[I == 144] = 0 # erase background (background type 1)
+  I[I == 109] = 0 # erase background (background type 2)
+  I[I != 0] = 1 # everything else (paddles, ball) just set to 1
+  return I.astype(np.float).ravel()
+
+
 def process_reward(reward, state_action_pairs):
     states, actions = zip(*state_action_pairs)
     states = np.array(states)
@@ -47,21 +62,21 @@ for i_episode in range(2000):
     observation = env.reset()
     last_observation = None
 
-    grads_win = None
-    grads_lose = None
-    tvars = None # TODO get this from get_trainable_variables() instead
-    action_dict = {2: 0, 3: 1}
-
     state_action_pairs = []
 
     for t in range(100000):
-        #env.render()
+        env.render()
         observation, reward, done, info = env.step(action)
+
+        observation = prepro(observation)
 
         if reward != 0:
             process_reward(reward, state_action_pairs)
             state_action_pairs = []
             print("Reward %d" % reward)
+            observation = env.reset()
+            last_observation = None
+            continue
 
         if done:
             print("Episode finished after {} timesteps".format(t+1))
@@ -74,18 +89,15 @@ for i_episode in range(2000):
             last_observation = observation
             continue
 
-        # sum over all colour channels
-        observation_delta = np.sum(observation_delta, axis=2)
-        observation_delta = np.reshape(observation_delta, [-1])
-
-        p = sess.run(p_op,
+        up_probability = sess.run(p_op,
             feed_dict={x: np.reshape(observation_delta, [1, -1])})
+        up_probability = up_probability[0]
 
         # p is probability of up
-        if np.random.uniform() < p[0]:
-            action = 2 # up
+        if np.random.uniform() < up_probability:
+            action = UP_ACTION
         else:
-            action = 3 # down
+            action = DOWN_ACTION
 
         state_action_pairs.append((observation_delta, action_dict[action]))
 
