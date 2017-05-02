@@ -7,25 +7,20 @@ import gym
 from IPython.core.debugger import Tracer
 
 OBSERVATION_SIZE = 210 * 160
-HIDDEN_LAYER_SIZE = 1000
-N_ACTIONS = 2
+HIDDEN_LAYER_SIZE = 200
 
 sess = tf.InteractiveSession()
 x = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE], name='x')
-y = tf.placeholder(tf.int32, [None], name='y')
+y = tf.placeholder(tf.float32, [None], name='y')
 
 x1 = tf.layers.dense(x, units=HIDDEN_LAYER_SIZE)
-# TODO: should this be sigmoid instead?
 x1 = tf.nn.relu(x1)
 
-logits = tf.layers.dense(x1, units=N_ACTIONS)
-softmax_op = tf.nn.softmax(logits)
+logp = tf.layers.dense(x1, units=1)
+p_op = tf.sigmoid(logp)
 
-cross_entropy = \
-    tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=y)
-loss_op = tf.reduce_mean(cross_entropy)
-
-optimizer = tf.train.AdamOptimizer()
+loss_op = tf.reduce_mean(y - p_op)
+optimizer = tf.train.RMSPropOptimizer(learning_rate=1e-4)
 train_op = optimizer.minimize(loss_op)
 
 tf.global_variables_initializer().run()
@@ -83,11 +78,11 @@ for i_episode in range(2000):
         observation_delta = np.sum(observation_delta, axis=2)
         observation_delta = np.reshape(observation_delta, [-1])
 
-        softmax = sess.run(softmax_op,
-            feed_dict={x: np.reshape(observation_delta, [1, -1]), y: [0]})
+        p = sess.run(p_op,
+            feed_dict={x: np.reshape(observation_delta, [1, -1])})
 
-        # softmax[0]: probability of up
-        if np.random.uniform() < softmax[0][0]:
+        # p is probability of up
+        if np.random.uniform() < p[0]:
             action = 2 # up
         else:
             action = 3 # down
