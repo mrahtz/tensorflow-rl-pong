@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import numpy as np
 import tensorflow as tf
 import gym
@@ -31,9 +33,6 @@ tf.global_variables_initializer().run()
 
 env = gym.make('Pong-v0')
 
-initial_action = env.action_space.sample()
-action = initial_action
-
 def prepro(I):
   """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
   """https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5"""
@@ -57,49 +56,54 @@ def process_reward(reward, state_action_pairs):
 
     sess.run(train_op, feed_dict={x: states, y: desired_actions})
 
-for i_episode in range(2000):
-    print("Episode", i_episode)
-    observation = env.reset()
-    last_observation = None
+action = env.action_space.sample()
+observation = env.reset()
+last_observation = None
+t = 0
+game_n = 0
+state_action_pairs = []
 
-    state_action_pairs = []
+while True:
+    #env.render()
+    observation, reward, done, info = env.step(action)
+    t += 1
 
-    for t in range(100000):
-        env.render()
-        observation, reward, done, info = env.step(action)
+    if reward != 0:
+        print("Game %d: %d steps; " % (game_n, t), end='')
+        if reward == +1:
+            print("won!")
+        else:
+            print("lost!")
 
-        observation = prepro(observation)
+        if t > 100:
+            reward = +1
 
-        if reward != 0:
+        if reward == +1:
             process_reward(reward, state_action_pairs)
-            state_action_pairs = []
-            print("Reward %d" % reward)
-            observation = env.reset()
-            last_observation = None
-            continue
 
-        if done:
-            print("Episode finished after {} timesteps".format(t+1))
-            break
+        state_action_pairs = []
+        t = 0
+        game_n += 1
+        observation = env.reset()
+        last_observation = None
+        action = env.action_space.sample()
 
-        if last_observation is not None:
-            observation_delta = observation - last_observation
-            last_observation = observation
-        else:
-            last_observation = observation
-            continue
+    observation = prepro(observation)
 
-        up_probability = sess.run(p_op,
-            feed_dict={x: np.reshape(observation_delta, [1, -1])})
-        up_probability = up_probability[0]
+    if last_observation is not None:
+        observation_delta = observation - last_observation
+        last_observation = observation
+    else:
+        last_observation = observation
+        continue
 
-        # p is probability of up
-        if np.random.uniform() < up_probability:
-            action = UP_ACTION
-        else:
-            action = DOWN_ACTION
+    up_probability = \
+        sess.run(p_op, feed_dict={x: observation_delta.reshape([1, -1])})
+    up_probability = up_probability[0]
 
-        state_action_pairs.append((observation_delta, action_dict[action]))
+    if np.random.uniform() < up_probability:
+        action = UP_ACTION
+    else:
+        action = DOWN_ACTION
 
-    if not done:
-        print("Maximum timesteps reached; resetting")
+    state_action_pairs.append((observation_delta, action_dict[action]))
