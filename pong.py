@@ -10,7 +10,7 @@ from IPython.core.debugger import Tracer
 
 OBSERVATION_SIZE = 6400
 HIDDEN_LAYER_SIZE = 200
-BATCH_SIZE_EPISODES = 2
+BATCH_SIZE_EPISODES = 10
 RENDER = False
 
 UP_ACTION = 2
@@ -20,6 +20,7 @@ action_dict = {DOWN_ACTION: 0, UP_ACTION: 1}
 sess = tf.InteractiveSession()
 x = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE], name='x')
 y = tf.placeholder(tf.float32, [None], name='y')
+advantage = tf.placeholder(tf.float32, [None], name='advantage')
 
 x1 = tf.layers.dense(x, units=HIDDEN_LAYER_SIZE,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
@@ -29,8 +30,9 @@ logp = tf.layers.dense(x1, units=1,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
 p_op = tf.sigmoid(logp)
 
-loss_op = tf.reduce_mean(y - p_op)
-optimizer = tf.train.RMSPropOptimizer(learning_rate=1e-4)
+batch_losses = -1 * advantage * (y * tf.log(p_op) + (1 - y) * tf.log(1 - p_op))
+loss_op = tf.reduce_mean(batch_losses)
+optimizer = tf.train.RMSPropOptimizer(learning_rate=1e-3)
 train_op = optimizer.minimize(loss_op)
 
 tf.global_variables_initializer().run()
@@ -57,9 +59,7 @@ def train(state_action_reward_tuples):
     actions = np.array(actions)
     rewards = np.array(rewards)
 
-    actions[rewards == -1] = \
-            np.logical_not(actions[rewards == -1]).astype(np.int)
-    sess.run(train_op, feed_dict={x: states, y: actions})
+    sess.run(train_op, feed_dict={x: states, y: actions, advantage: rewards})
 
 
 last_observation = None
