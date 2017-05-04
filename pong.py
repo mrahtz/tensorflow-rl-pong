@@ -50,6 +50,7 @@ def train(state_action_reward_tuples):
 
 
 def discount_rewards(rewards, discount_factor):
+    discounted_rewards = np.zeros_like(rewards)
     for t in range(len(rewards)):
         discounted_reward_sum = 0
         discount = 1
@@ -59,8 +60,8 @@ def discount_rewards(rewards, discount_factor):
             if rewards[k] != 0:
                 # end of round
                 break
-        rewards[t] = discounted_reward_sum
-    return rewards
+        discounted_rewards[t] = discounted_reward_sum
+    return discounted_rewards
 
 
 # TensorFlow setup
@@ -148,11 +149,12 @@ while True:
 
         observation, reward, episode_done, info = env.step(action)
         observation = prepro(observation)
+        episode_reward_sum += reward
         n_steps += 1
 
         # TODO: this _is_ the right place to collect these, right?
-        tups = (observation_delta, action_dict[action], reward)
-        batch_state_action_reward_tuples.append(tups)
+        tup = (observation_delta, action_dict[action], reward)
+        batch_state_action_reward_tuples.append(tup)
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
@@ -178,9 +180,9 @@ while True:
     episode_reward_sum = 0
 
     if episode_n % args.batch_size_episodes == 0:
-        states, actions, rewards = zip(*state_action_reward_tuples)
+        states, actions, rewards = zip(*batch_state_action_reward_tuples)
         rewards = discount_rewards(rewards, args.discount_factor)
-        batch_state_action_reward_tuples = zip(states, actions, rewards)
+        batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
     episode_n += 1
