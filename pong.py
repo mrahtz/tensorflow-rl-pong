@@ -158,6 +158,8 @@ while True:
     # From Karpathy's code
     # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
     # to enable comparison
+    # TODO: rename these variables. It's totally not a running meaning!
+    # It's something weird based on linear interpolation.
     if running_reward_mean is None:
         running_reward_mean = episode_reward_sum
     else:
