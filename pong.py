@@ -10,7 +10,6 @@ import gym
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--batch_size_episodes', type=int, default=10)
-# TODO: is this 0.99?
 parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
 args = parser.parse_args()
