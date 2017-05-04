@@ -49,6 +49,20 @@ def train(state_action_reward_tuples):
                                   advantage: rewards})
 
 
+def discount_rewards(rewards, discount_factor):
+    for t in range(len(rewards)):
+        discounted_reward_sum = 0
+        discount = 1
+        for k in range(t, len(rewards)):
+            discounted_reward_sum += rewards[k] * discount
+            discount *= discount_factor
+            if rewards[k] != 0:
+                # end of round
+                break
+        rewards[t] = discounted_reward_sum
+    return rewards
+
+
 # TensorFlow setup
 
 sess = tf.InteractiveSession()
@@ -165,16 +179,7 @@ while True:
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*state_action_reward_tuples)
-
-        # Discount rewards
-        for t in len(rewards):
-            discounted_reward_sum = 0
-            discount = 1
-            for k in range(t, len(rewards)):
-                discounted_reward_sum += reward[k] * discount
-                discount *= args.discount_factor
-            rewards[t] = discounted_reward_sum
-
+        rewards = discount_rewards(rewards, args.discount_factor)
         batch_state_action_reward_tuples = zip(states, actions, rewards)
         train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
