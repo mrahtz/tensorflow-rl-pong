@@ -182,6 +182,8 @@ while True:
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
         rewards = discount_rewards(rewards, args.discount_factor)
+        rewards -= np.mean(rewards)
+        rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
