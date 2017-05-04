@@ -102,7 +102,7 @@ batch_losses = \
         * advantage \
         * -1
 loss = tf.reduce_mean(batch_losses)
-optimizer = tf.train.RMSPropOptimizer(learning_rate=1e-3)
+optimizer = tf.train.RMSPropOptimizer(decay=0.99, learning_rate=1e-3)
 train_op = optimizer.minimize(loss)
 
 tf.global_variables_initializer().run()
