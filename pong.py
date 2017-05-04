@@ -10,6 +10,8 @@ import gym
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--batch_size_episodes', type=int, default=10)
+# TODO: is this 0.99?
+parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
 args = parser.parse_args()
 
@@ -97,16 +99,16 @@ env = gym.make('Pong-v0')
 
 # Start training!
 
-running_reward = None
+batch_state_action_reward_tuples = []
+running_reward_mean = None
 episode_n = 1
 
 while True:
     print("Starting episode %d" % episode_n)
 
-    state_action_tuples = []
-    state_action_reward_tuples = []
-    reward_sum = 0
     episode_done = False
+    episode_reward_sum = 0
+
     round_n = 1
 
     last_observation = env.reset()
@@ -129,39 +131,51 @@ while True:
             action = UP_ACTION
         else:
             action = DOWN_ACTION
-        state_action_tuples.append((observation_delta, action_dict[action]))
 
         observation, reward, episode_done, info = env.step(action)
         observation = prepro(observation)
-        reward_sum += reward
         n_steps += 1
+
+        # TODO: this _is_ the right place to collect these, right?
+        tups = (observation_delta, action_dict[action], reward)
+        batch_state_action_reward_tuples.append(tups)
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
         elif reward == +1:
             print("Round %d: %d time steps; won!" % (round_n, n_steps))
         if reward != 0:
+            # End of round
             round_n += 1
             n_steps = 0
-
-            states, actions = zip(*state_action_tuples)
-            rewards = len(states) * [reward]
-            state_action_reward_tuples.extend(zip(states, actions, rewards))
-            state_action_tuples = []
 
     print("Episode %d finished after %d rounds" % (episode_n, round_n))
 
     # From Karpathy's code
     # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
     # to enable comparison
-    if running_reward is None:
-        running_reward = reward_sum
+    if running_reward_mean is None:
+        running_reward_mean = episode_reward_sum
     else:
-        running_reward = running_reward * 0.99 + reward_sum * 0.01
-    print("Reward total was %.3f; moving average of reward is %.3f" \
-        % (reward_sum, running_reward))
-    reward_sum = 0
+        running_reward_mean = \
+            running_reward_mean * 0.99 + episode_reward_sum * 0.01
+    print("Reward total was %.3f; running mean of reward is %.3f" \
+        % (episode_reward_sum, running_reward_mean))
+    episode_reward_sum = 0
 
     if episode_n % args.batch_size_episodes == 0:
-        train(state_action_reward_tuples)
+        states, actions, rewards = zip(*state_action_reward_tuples)
+
+        # Discount rewards
+        for t in len(rewards):
+            discounted_reward_sum = 0
+            discount = 1
+            for k in range(t, len(rewards)):
+                discounted_reward_sum += reward[k] * discount
+                discount *= args.discount_factor
+            rewards[t] = discounted_reward_sum
+
+        batch_state_action_reward_tuples = zip(states, actions, rewards)
+        train(batch_state_action_reward_tuples)
+        batch_state_action_reward_tuples = []
     episode_n += 1
