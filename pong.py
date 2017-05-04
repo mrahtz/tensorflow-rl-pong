@@ -151,7 +151,6 @@ while True:
         episode_reward_sum += reward
         n_steps += 1
 
-        # TODO: this _is_ the right place to collect these, right?
         tup = (observation_delta, action_dict[action], reward)
         batch_state_action_reward_tuples.append(tup)
 
