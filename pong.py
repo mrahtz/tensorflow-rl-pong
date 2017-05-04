@@ -97,6 +97,7 @@ env = gym.make('Pong-v0')
 
 # Start training!
 
+running_reward = None
 episode_n = 1
 
 while True:
@@ -104,7 +105,9 @@ while True:
 
     state_action_tuples = []
     state_action_reward_tuples = []
+    reward_sum = 0
     episode_done = False
+    round_n = 1
 
     last_observation = env.reset()
     last_observation = prepro(last_observation)
@@ -112,8 +115,6 @@ while True:
     observation, _, _, _ = env.step(action)
     observation = prepro(observation)
     n_steps = 1
-
-    round_n = 1
 
     while not episode_done:
         if args.render:
@@ -132,6 +133,7 @@ while True:
 
         observation, reward, episode_done, info = env.step(action)
         observation = prepro(observation)
+        reward_sum += reward
         n_steps += 1
 
         if reward == -1:
@@ -148,6 +150,18 @@ while True:
             state_action_tuples = []
 
     print("Episode %d finished after %d rounds" % (episode_n, round_n))
+
+    # From Karpathy's code
+    # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
+    # to enable comparison
+    if running_reward is None:
+        running_reward = reward_sum
+    else:
+        running_reward = running_reward * 0.99 + reward_sum * 0.01
+    print("Reward total was %.3f; moving average of reward is %.3f" \
+        % (reward_sum, running_reward))
+    reward_sum = 0
+
     if episode_n % args.batch_size_episodes == 0:
         train(state_action_reward_tuples)
     episode_n += 1
