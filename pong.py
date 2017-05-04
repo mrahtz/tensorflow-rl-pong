@@ -98,7 +98,7 @@ env = gym.make('Pong-v0')
 # Start training!
 
 batch_state_action_reward_tuples = []
-running_reward = None
+running_reward_mean = None
 episode_n = 1
 
 while True:
@@ -158,12 +158,13 @@ while True:
     # From Karpathy's code
     # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
     # to enable comparison
-    if running_reward is None:
-        running_reward = episode_reward_sum
+    if running_reward_mean is None:
+        running_reward_mean = episode_reward_sum
     else:
-        running_reward = running_reward * 0.99 + episode_reward_sum * 0.01
-    print("Reward total was %.3f; moving average of reward is %.3f" \
-        % (episode_reward_sum, running_reward))
+        running_reward_mean = \
+            running_reward_mean * 0.99 + episode_reward_sum * 0.01
+    print("Reward total was %.3f; running mean of reward is %.3f" \
+        % (episode_reward_sum, running_reward_mean))
     episode_reward_sum = 0
 
     if episode_n % args.batch_size_episodes == 0:
