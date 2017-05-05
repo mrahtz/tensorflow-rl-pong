@@ -74,10 +74,12 @@ sampled_actions = tf.placeholder(tf.float32, [None])
 advantage = tf.placeholder(tf.float32, [None], name='advantage')
 
 x = tf.layers.dense(observations, units=args.hidden_layer_size,
+        use_bias=False,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
 x = tf.nn.relu(x)
 
 x = tf.layers.dense(x, units=1,
+        use_bias=False,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
 up_probability = tf.sigmoid(x)
 
