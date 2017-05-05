@@ -41,9 +41,9 @@ def train(state_action_reward_tuples):
             len(state_action_reward_tuples))
 
     states, actions, rewards = zip(*state_action_reward_tuples)
-    states = np.array(states)
-    actions = np.array(actions)
-    rewards = np.array(rewards)
+    states = np.vstack(states)
+    actions = np.vstack(actions)
+    rewards = np.vstack(rewards)
 
     sess.run(train_op, feed_dict={observations: states,
                                   sampled_actions: actions,
@@ -70,8 +70,8 @@ def discount_rewards(rewards, discount_factor):
 sess = tf.InteractiveSession()
 observations = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE])
 # +1 for up, -1 for down
-sampled_actions = tf.placeholder(tf.float32, [None])
-advantage = tf.placeholder(tf.float32, [None], name='advantage')
+sampled_actions = tf.placeholder(tf.float32, [None, 1])
+advantage = tf.placeholder(tf.float32, [None, 1], name='advantage')
 
 x = tf.layers.dense(observations, units=args.hidden_layer_size,
         use_bias=False,
