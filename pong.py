@@ -115,6 +115,7 @@ env = gym.make('Pong-v0')
 
 batch_state_action_reward_tuples = []
 running_reward_mean = None
+episode_reward_sums = []
 episode_n = 1
 
 while True:
@@ -175,7 +176,10 @@ while True:
             running_reward_mean * 0.99 + episode_reward_sum * 0.01
     print("Reward total was %.3f; running mean of reward is %.3f" \
         % (episode_reward_sum, running_reward_mean))
-    episode_reward_sum = 0
+
+    episode_reward_sums.append(episode_reward_sum)
+    with open('rewards_' + args.run_id + '.pkl', 'wb') as f:
+        pickle.dump(episode_reward_sums, f)
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
