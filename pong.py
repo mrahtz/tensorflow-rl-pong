@@ -98,10 +98,8 @@ up_probability = tf.sigmoid(x)
 # a loss, whereas we actually want to maximise this quantity. For e.g. a good
 # sampled action, we want to maximise the log probability, and this is the same
 # as minimising the negative log probability.)
-batch_losses = \
-        tf.losses.log_loss(labels=sampled_actions, predictions=up_probability) \
-        * advantage
-loss = tf.reduce_mean(batch_losses)
+loss = tf.losses.log_loss(labels=sampled_actions, predictions=up_probability,
+                weights=advantage)
 optimizer = tf.train.AdamOptimizer(learning_rate=0.001/2)
 train_op = optimizer.minimize(loss)
 
