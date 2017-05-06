@@ -6,6 +6,16 @@ OpenAI gym.
 Basically, an attempt at a TensorFlow version of Andrej Karpathy's
 [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/).
 
+## Changes from Andrej's Code
+
+* Andrej accumulates gradients from each episode over a batch size of 10
+  episodes, and then applies them all in one go. I think this is based on a
+  recommendation in [Asynchronous Methods for Deep Reinforcement
+  Learning](https://arxiv.org/pdf/1602.01783.pdf). It looked like this was going
+  to be a pain to do in TensorFlow, though, (see e.g.
+  <http://stackoverflow.com/q/37710974>), so here we just use a batch size of
+  one episode.
+
 ## Lessons Learned
 
 * Given that the number of rounds the agent wins and loses each episode jumps
