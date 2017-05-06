@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import argparse
+import pickle
 import numpy as np
 import tensorflow as tf
 import gym
@@ -10,7 +11,9 @@ import gym
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--batch_size_episodes', type=int, default=10)
+parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
+parser.add_argument('run_id', type=str)
 args = parser.parse_args()
 
 OBSERVATION_SIZE = 6400
@@ -38,13 +41,28 @@ def train(state_action_reward_tuples):
             len(state_action_reward_tuples))
 
     states, actions, rewards = zip(*state_action_reward_tuples)
-    states = np.array(states)
-    actions = np.array(actions)
-    rewards = np.array(rewards)
+    states = np.vstack(states)
+    actions = np.vstack(actions)
+    rewards = np.vstack(rewards)
 
     sess.run(train_op, feed_dict={observations: states,
                                   sampled_actions: actions,
                                   advantage: rewards})
+
+
+def discount_rewards(rewards, discount_factor):
+    discounted_rewards = np.zeros_like(rewards)
+    for t in range(len(rewards)):
+        discounted_reward_sum = 0
+        discount = 1
+        for k in range(t, len(rewards)):
+            discounted_reward_sum += rewards[k] * discount
+            discount *= discount_factor
+            if rewards[k] != 0:
+                # end of round
+                break
+        discounted_rewards[t] = discounted_reward_sum
+    return discounted_rewards
 
 
 # TensorFlow setup
@@ -52,14 +70,16 @@ def train(state_action_reward_tuples):
 sess = tf.InteractiveSession()
 observations = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE])
 # +1 for up, -1 for down
-sampled_actions = tf.placeholder(tf.float32, [None])
-advantage = tf.placeholder(tf.float32, [None], name='advantage')
+sampled_actions = tf.placeholder(tf.float32, [None, 1])
+advantage = tf.placeholder(tf.float32, [None, 1], name='advantage')
 
 x = tf.layers.dense(observations, units=args.hidden_layer_size,
+        use_bias=False,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
 x = tf.nn.relu(x)
 
 x = tf.layers.dense(x, units=1,
+        use_bias=False,
         kernel_initializer=tf.contrib.layers.xavier_initializer())
 up_probability = tf.sigmoid(x)
 
@@ -78,15 +98,9 @@ up_probability = tf.sigmoid(x)
 # a loss, whereas we actually want to maximise this quantity. For e.g. a good
 # sampled action, we want to maximise the log probability, and this is the same
 # as minimising the negative log probability.)
-batch_losses = \
-        (
-            sampled_actions       * tf.log(up_probability) + \
-            (1 - sampled_actions) * tf.log(1 - up_probability) \
-        ) \
-        * advantage \
-        * -1
-loss = tf.reduce_mean(batch_losses)
-optimizer = tf.train.RMSPropOptimizer(learning_rate=1e-3)
+loss = tf.losses.log_loss(labels=sampled_actions, predictions=up_probability,
+                weights=advantage)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.001/2)
 train_op = optimizer.minimize(loss)
 
 tf.global_variables_initializer().run()
@@ -99,6 +113,7 @@ env = gym.make('Pong-v0')
 
 batch_state_action_reward_tuples = []
 running_reward_mean = None
+episode_reward_sums = []
 episode_n = 1
 
 while True:
@@ -107,7 +122,6 @@ while True:
     episode_done = False
     episode_reward_sum = 0
 
-    round_state_action_tuples = []
     round_n = 1
 
     last_observation = env.reset()
@@ -130,13 +144,14 @@ while True:
             action = UP_ACTION
         else:
             action = DOWN_ACTION
-        tups = (observation_delta, action_dict[action])
-        round_state_action_tuples.append(tups)
 
         observation, reward, episode_done, info = env.step(action)
         observation = prepro(observation)
         episode_reward_sum += reward
         n_steps += 1
+
+        tup = (observation_delta, action_dict[action], reward)
+        batch_state_action_reward_tuples.append(tup)
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
@@ -147,19 +162,11 @@ while True:
             round_n += 1
             n_steps = 0
 
-            states, actions = zip(*round_state_action_tuples)
-            rewards = len(states) * [reward]
-            tups = zip(states, actions, rewards)
-            batch_state_action_reward_tuples.extend(tups)
-            round_state_action_tuples = []
-
     print("Episode %d finished after %d rounds" % (episode_n, round_n))
 
     # From Karpathy's code
     # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
     # to enable comparison
-    # TODO: rename these variables. It's totally not a running meaning!
-    # It's something weird based on linear interpolation.
     if running_reward_mean is None:
         running_reward_mean = episode_reward_sum
     else:
@@ -167,9 +174,17 @@ while True:
             running_reward_mean * 0.99 + episode_reward_sum * 0.01
     print("Reward total was %.3f; running mean of reward is %.3f" \
         % (episode_reward_sum, running_reward_mean))
-    episode_reward_sum = 0
+
+    episode_reward_sums.append(episode_reward_sum)
+    with open('rewards_' + args.run_id + '.pkl', 'wb') as f:
+        pickle.dump(episode_reward_sums, f)
 
     if episode_n % args.batch_size_episodes == 0:
+        states, actions, rewards = zip(*batch_state_action_reward_tuples)
+        rewards = discount_rewards(rewards, args.discount_factor)
+        rewards -= np.mean(rewards)
+        rewards /= np.std(rewards)
+        batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
     episode_n += 1
