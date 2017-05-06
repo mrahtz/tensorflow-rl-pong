@@ -106,7 +106,7 @@ batch_losses = \
         * advantage \
         * -1
 loss = tf.reduce_mean(batch_losses)
-optimizer = tf.train.AdamOptimizer()
+optimizer = tf.train.AdamOptimizer(learning_rate=0.001/2)
 train_op = optimizer.minimize(loss)
 
 tf.global_variables_initializer().run()
