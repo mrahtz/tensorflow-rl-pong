@@ -8,6 +8,8 @@ import numpy as np
 import tensorflow as tf
 import gym
 
+from model import Network
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--batch_size_episodes', type=int, default=10)
@@ -16,7 +18,6 @@ parser.add_argument('--render', action='store_true')
 parser.add_argument('run_id', type=str)
 args = parser.parse_args()
 
-OBSERVATION_SIZE = 6400
 # Action values to send to environment to move paddle up/down
 UP_ACTION = 2
 DOWN_ACTION = 3
@@ -45,9 +46,9 @@ def train(state_action_reward_tuples):
     actions = np.vstack(actions)
     rewards = np.vstack(rewards)
 
-    sess.run(train_op, feed_dict={observations: states,
-                                  sampled_actions: actions,
-                                  advantage: rewards})
+    sess.run(network.train_op, feed_dict={network.observations: states,
+                                  network.sampled_actions: actions,
+                                  network.advantage: rewards})
 
 
 def discount_rewards(rewards, discount_factor):
@@ -64,45 +65,10 @@ def discount_rewards(rewards, discount_factor):
         discounted_rewards[t] = discounted_reward_sum
     return discounted_rewards
 
-
 # TensorFlow setup
 
 sess = tf.InteractiveSession()
-observations = tf.placeholder(tf.float32, [None, OBSERVATION_SIZE])
-# +1 for up, -1 for down
-sampled_actions = tf.placeholder(tf.float32, [None, 1])
-advantage = tf.placeholder(tf.float32, [None, 1], name='advantage')
-
-x = tf.layers.dense(observations, units=args.hidden_layer_size,
-        use_bias=False,
-        kernel_initializer=tf.contrib.layers.xavier_initializer())
-x = tf.nn.relu(x)
-
-x = tf.layers.dense(x, units=1,
-        use_bias=False,
-        kernel_initializer=tf.contrib.layers.xavier_initializer())
-up_probability = tf.sigmoid(x)
-
-# Train based on the log probability of the sampled action.
-#
-# If the sampled action was part of a round in which the agent won, we assume
-# the sampled action was a good one, so we try to maximise the log probability
-# of that action in the future. Here, therefore, 'advantage' is positive.
-#
-# If the sampled action was part of a round in which the agent didn't win, we
-# assume the sampled action was a bad choice, so in that case we want to
-# _minimise_ the log probability of that action in the future. 'advantage' is
-# therefore negative.
-#
-# (The '-1' at the end is necessary because with TensorFlow we can only minimise
-# a loss, whereas we actually want to maximise this quantity. For e.g. a good
-# sampled action, we want to maximise the log probability, and this is the same
-# as minimising the negative log probability.)
-loss = tf.losses.log_loss(labels=sampled_actions, predictions=up_probability,
-                weights=advantage)
-optimizer = tf.train.AdamOptimizer(learning_rate=0.001/2)
-train_op = optimizer.minimize(loss)
-
+network = Network(args.hidden_layer_size)
 tf.global_variables_initializer().run()
 
 # Set up OpenAI gym environment
@@ -137,8 +103,8 @@ while True:
 
         observation_delta = observation - last_observation
         last_observation = observation
-        up_probability_val = sess.run(up_probability,
-            feed_dict={observations: observation_delta.reshape([1, -1])})
+        up_probability_val = sess.run(network.up_probability,
+            feed_dict={network.observations: observation_delta.reshape([1, -1])})
         up_probability_val = up_probability_val[0]
         if np.random.uniform() < up_probability_val:
             action = UP_ACTION
