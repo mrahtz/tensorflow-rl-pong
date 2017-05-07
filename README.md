@@ -20,7 +20,7 @@ Basically, an attempt at a TensorFlow version of Andrej Karpathy's
 
 After 7,000 episodes:
 
-!(images/playing.gif)
+![](images/playing.gif)
 
 ## Changes from Andrej's Code
 
