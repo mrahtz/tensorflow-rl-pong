@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--batch_size_episodes', type=int, default=1)
 parser.add_argument('--checkpoint_every_n_episodes', type=int, default=10)
+parser.add_argument('--load_checkpoint', action='store_true')
 parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
 parser.add_argument('run_id', type=str)
@@ -73,6 +74,9 @@ network = Network(args.hidden_layer_size)
 tf.global_variables_initializer().run()
 
 saver = tf.train.Saver()
+
+if args.load_checkpoint:
+    saver.restore(sess, 'checkpoints/model.ckpt')
 
 # Set up OpenAI gym environment
 
