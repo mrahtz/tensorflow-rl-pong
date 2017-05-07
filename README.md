@@ -6,6 +6,22 @@ OpenAI gym.
 Basically, an attempt at a TensorFlow version of Andrej Karpathy's
 [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/).
 
+## Vocabulary
+
+* 'Round': one match, in which one player gains a point
+* 'Episode': a set of rounds (usually around 20 or so - I'm not sure what logic
+  the game uses to decide this)
+
+## Training Time
+
+* It takes about 500 episodes to see whether the agent is improving or not
+* It takes about 7,000 episodes to get to a stage where the agent is winning
+  half and losing half of the rounds
+
+After 7,000 episodes:
+
+!(images/playing.gif)
+
 ## Changes from Andrej's Code
 
 * Andrej accumulates gradients from each episode over a batch size of 10
