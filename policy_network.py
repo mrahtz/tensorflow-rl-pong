@@ -18,19 +18,17 @@ class Network:
         self.advantage = tf.placeholder(
             tf.float32, [None, 1], name='advantage')
 
-        x = tf.layers.dense(
+        h = tf.layers.dense(
             self.observations,
             units=hidden_layer_size,
-            use_bias=False,
+            activation=tf.nn.relu,
             kernel_initializer=tf.contrib.layers.xavier_initializer())
-        x = tf.nn.relu(x)
 
-        x = tf.layers.dense(
-            x,
+        self.up_probability = tf.layers.dense(
+            h,
             units=1,
-            use_bias=False,
+            activation=tf.sigmoid,
             kernel_initializer=tf.contrib.layers.xavier_initializer())
-        self.up_probability = tf.sigmoid(x)
 
         # Train based on the log probability of the sampled action.
         # 
