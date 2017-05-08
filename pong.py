@@ -59,12 +59,12 @@ def discount_rewards(rewards, discount_factor):
         discounted_rewards[t] = discounted_reward_sum
     return discounted_rewards
 
-
-network = Network(args.hidden_layer_size, args.learning_rate)
-if args.load_checkpoint:
-    network.load_checkpoint('checkpoints')
-
 env = gym.make('Pong-v0')
+
+network = Network(
+    args.hidden_layer_size, args.learning_rate, checkpoints_dir='checkpoints')
+if args.load_checkpoint:
+    network.load_checkpoint()
 
 batch_state_action_reward_tuples = []
 smoothed_reward = None
@@ -133,7 +133,6 @@ while True:
         batch_state_action_reward_tuples = []
 
     if episode_n % args.checkpoint_every_n_episodes == 0:
-        print("Saving checkpoint...")
-        network.save_checkpoint('checkpoints')
+        network.save_checkpoint()
 
     episode_n += 1

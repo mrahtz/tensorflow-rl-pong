@@ -1,11 +1,12 @@
-import tensorflow as tf
+import os.path
 import numpy as np
+import tensorflow as tf
 
 OBSERVATIONS_SIZE = 6400
 
 
 class Network:
-    def __init__(self, hidden_layer_size, learning_rate):
+    def __init__(self, hidden_layer_size, learning_rate, checkpoints_dir):
         self.learning_rate = learning_rate
 
         self.sess = tf.InteractiveSession()
@@ -52,13 +53,16 @@ class Network:
         tf.global_variables_initializer().run()
 
         self.saver = tf.train.Saver()
+        self.checkpoint_file = os.path.join(checkpoints_dir,
+                                            'policy_network.ckpt')
 
-    def load_checkpoint(self, checkpoints_dir):
+    def load_checkpoint(self):
         print("Loading checkpoint...")
-        self.saver.restore(self.sess, 'checkpoints/model.ckpt')
+        self.saver.restore(self.sess, self.checkpoint_file)
 
-    def save_checkpoint(self, checkpoints_dir):
-        self.saver.save(self.sess, 'checkpoints/model.ckpt')
+    def save_checkpoint(self):
+        print("Saving checkpoint...")
+        self.saver.save(self.sess, self.checkpoint_file)
 
     def forward_pass(self, observations):
         up_probability = self.sess.run(
