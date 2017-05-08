@@ -5,7 +5,9 @@ OBSERVATIONS_SIZE = 6400
 
 
 class Network:
-    def __init__(self, hidden_layer_size):
+    def __init__(self, hidden_layer_size, learning_rate):
+        self.learning_rate = learning_rate
+
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
@@ -44,7 +46,7 @@ class Network:
             labels=self.sampled_actions,
             predictions=self.up_probability,
             weights=self.advantage)
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001 / 2)
+        optimizer = tf.train.AdamOptimizer(self.learning_rate)
         self.train_op = optimizer.minimize(self.loss)
 
         tf.global_variables_initializer().run()
@@ -63,7 +65,7 @@ class Network:
             self.up_probability,
             feed_dict={self.observations: observations.reshape([1, -1])})
         up_probability = up_probability[0]
-        return up_probability_val
+        return up_probability
 
     def train(self, state_action_reward_tuples):
         print("Training with %d (state, action, reward) tuples" %
