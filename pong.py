@@ -91,7 +91,7 @@ while True:
 
         observation_delta = observation - last_observation
         last_observation = observation
-        up_probability = network.forward_pass(observation_delta)
+        up_probability = network.forward_pass(observation_delta)[0]
         if np.random.uniform() < up_probability:
             action = UP_ACTION
         else:

@@ -64,7 +64,6 @@ class Network:
         up_probability = self.sess.run(
             self.up_probability,
             feed_dict={self.observations: observations.reshape([1, -1])})
-        up_probability = up_probability[0]
         return up_probability
 
     def train(self, state_action_reward_tuples):
