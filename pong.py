@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 import gym
 
-from model import Network
+from policy_network import Network
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
