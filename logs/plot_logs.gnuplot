@@ -1,3 +1,5 @@
+#!/usr/bin/env gnuplot
+
 set term png
 set output 'logs.png'
 set xlabel "Episode number"
