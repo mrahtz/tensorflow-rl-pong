@@ -16,7 +16,6 @@ parser.add_argument('--checkpoint_every_n_episodes', type=int, default=10)
 parser.add_argument('--load_checkpoint', action='store_true')
 parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
-parser.add_argument('run_id', type=str)
 args = parser.parse_args()
 
 # Action values to send to environment to move paddle up/down
@@ -66,7 +65,6 @@ env = gym.make('Pong-v0')
 
 batch_state_action_reward_tuples = []
 running_reward_mean = None
-episode_reward_sums = []
 episode_n = 1
 
 while True:
@@ -126,10 +124,6 @@ while True:
             running_reward_mean * 0.99 + episode_reward_sum * 0.01
     print("Reward total was %.3f; running mean of reward is %.3f" \
         % (episode_reward_sum, running_reward_mean))
-
-    episode_reward_sums.append(episode_reward_sum)
-    with open('rewards_' + args.run_id + '.pkl', 'wb') as f:
-        pickle.dump(episode_reward_sums, f)
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
