@@ -10,10 +10,13 @@ After 7,000 episodes of training, the result looks like:
 
 ## Usage
 
+First, install OpenAI Gym and TensorFlow.
+
 Run without any arguments to train the AI from scratch. Checkpoints will be
 saved every so often (see `--checkpoint_every_n_episodes`).
 
-Run with `--load_checkpoint --render` to see how a trained AI plays.
+Run with `--load_checkpoint --render` to see how an AI trained on ~8,000 episode
+plays.
 
 ## Vocabulary
 
