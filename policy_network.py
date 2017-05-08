@@ -30,20 +30,16 @@ class Network:
         self.up_probability = tf.sigmoid(x)
 
         # Train based on the log probability of the sampled action.
+        # 
+        # The idea is to encourage actions taken in rounds where the agent won,
+        # and discourage actions in rounds where the agent lost.
+        # More specifically, we want to increase the log probability of winning
+        # actions, and decrease the log probability of losing actions.
         #
-        # If the sampled action was part of a round in which the agent won, we assume
-        # the sampled action was a good one, so we try to maximise the log probability
-        # of that action in the future. Here, therefore, 'advantage' is positive.
-        #
-        # If the sampled action was part of a round in which the agent didn't win, we
-        # assume the sampled action was a bad choice, so in that case we want to
-        # _minimise_ the log probability of that action in the future. 'advantage' is
-        # therefore negative.
-        #
-        # (The '-1' at the end is necessary because with TensorFlow we can only minimise
-        # a loss, whereas we actually want to maximise this quantity. For e.g. a good
-        # sampled action, we want to maximise the log probability, and this is the same
-        # as minimising the negative log probability.)
+        # Which direction to push the log probability in is controlled by
+        # 'advantage', which is the reward for each action in each round.
+        # Positive reward pushes the log probability of chosen action up;
+        # negative reward pushes the log probability of the chosen action down.
         self.loss = tf.losses.log_loss(
             labels=self.sampled_actions,
             predictions=self.up_probability,
