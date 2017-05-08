@@ -39,20 +39,6 @@ def prepro(I):
   return I.astype(np.float).ravel()
 
 
-def train(state_action_reward_tuples):
-    print("Training with %d (state, action, reward) tuples" %
-            len(state_action_reward_tuples))
-
-    states, actions, rewards = zip(*state_action_reward_tuples)
-    states = np.vstack(states)
-    actions = np.vstack(actions)
-    rewards = np.vstack(rewards)
-
-    sess.run(network.train_op, feed_dict={network.observations: states,
-                                  network.sampled_actions: actions,
-                                  network.advantage: rewards})
-
-
 def discount_rewards(rewards, discount_factor):
     discounted_rewards = np.zeros_like(rewards)
     for t in range(len(rewards)):
@@ -67,16 +53,11 @@ def discount_rewards(rewards, discount_factor):
         discounted_rewards[t] = discounted_reward_sum
     return discounted_rewards
 
-# TensorFlow setup
+# network setup
 
-sess = tf.InteractiveSession()
 network = Network(args.hidden_layer_size)
-tf.global_variables_initializer().run()
-
-saver = tf.train.Saver()
-
 if args.load_checkpoint:
-    saver.restore(sess, 'checkpoints/model.ckpt')
+    network.load_checkpoint('checkpoints')
 
 # Set up OpenAI gym environment
 
@@ -110,8 +91,7 @@ while True:
 
         observation_delta = observation - last_observation
         last_observation = observation
-        up_probability_val = sess.run(network.up_probability,
-            feed_dict={network.observations: observation_delta.reshape([1, -1])})
+        up_probability_val = network.forward_pass(observation_delta)
         up_probability_val = up_probability_val[0]
         if np.random.uniform() < up_probability_val:
             action = UP_ACTION
@@ -158,11 +138,11 @@ while True:
         rewards -= np.mean(rewards)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
-        train(batch_state_action_reward_tuples)
+        network.train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
 
     if episode_n % args.checkpoint_every_n_episodes == 0:
         print("Saving checkpoint...")
-        saver.save(sess, 'checkpoints/model.ckpt')
+        network.save_checkpoint('checkpoints')
 
     episode_n += 1
