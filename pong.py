@@ -64,7 +64,7 @@ env = gym.make('Pong-v0')
 # Start training!
 
 batch_state_action_reward_tuples = []
-running_reward_mean = None
+smoothed_reward = None
 episode_n = 1
 
 while True:
@@ -114,16 +114,14 @@ while True:
 
     print("Episode %d finished after %d rounds" % (episode_n, round_n))
 
-    # From Karpathy's code
-    # https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5
-    # to enable comparison
-    if running_reward_mean is None:
-        running_reward_mean = episode_reward_sum
+    # exponentially smoothed version of reward
+    if smoothed_reward is None:
+        smoothed_reward = episode_reward_sum
     else:
-        running_reward_mean = \
-            running_reward_mean * 0.99 + episode_reward_sum * 0.01
-    print("Reward total was %.3f; running mean of reward is %.3f" \
-        % (episode_reward_sum, running_reward_mean))
+        smoothed_reward = \
+            smoothed_reward * 0.99 + episode_reward_sum * 0.01
+    print("Reward total was %.3f; discounted moving average of reward is %.3f" \
+        % (episode_reward_sum, smoothed_reward))
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
