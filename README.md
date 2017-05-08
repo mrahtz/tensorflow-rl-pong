@@ -6,7 +6,7 @@ Pixels](http://karpathy.github.io/2016/05/31/rl/).
 
 After 7,000 episodes of training, the result looks like:
 
-!(images/playing.gif)
+![](images/playing.gif)
 
 ## Usage
 
