@@ -14,6 +14,10 @@ import argparse
 import pickle
 import numpy as np
 import gym
+import time
+
+import os
+import tensorflow as tf
 
 from policy_network import Network
 
@@ -67,8 +71,26 @@ if args.load_checkpoint:
     network.load_checkpoint()
 
 batch_state_action_reward_tuples = []
-smoothed_reward = None
 episode_n = 1
+
+reward_average = None
+reward_average_var = tf.Variable(0.0)
+reward_summary = tf.summary.scalar('reward_average', reward_average_var)
+dirname = 'summaries/' + str(int(time.time()))
+os.makedirs(dirname)
+summary_writer = tf.summary.FileWriter(dirname, flush_secs=1)
+
+def log_rewards(reward_sum, step):
+    global reward_average, reward_average_var, reward_summary, network, summary_writer
+    if reward_average is None:
+        reward_average = reward_sum
+    else:
+        reward_average = reward_average * 0.99 + reward_sum * 0.01
+    print("Reward total was %.3f; reward average is %.3f" % (reward_sum,
+          reward_average))
+    network.sess.run(tf.assign(reward_average_var, reward_average))
+    summ = network.sess.run(reward_summary)
+    summary_writer.add_summary(summ, step)
 
 while True:
     print("Starting episode %d" % episode_n)
@@ -115,13 +137,7 @@ while True:
 
     print("Episode %d finished after %d rounds" % (episode_n, round_n))
 
-    # exponentially smoothed version of reward
-    if smoothed_reward is None:
-        smoothed_reward = episode_reward_sum
-    else:
-        smoothed_reward = smoothed_reward * 0.99 + episode_reward_sum * 0.01
-    print("Reward total was %.3f; discounted moving average of reward is %.3f" \
-        % (episode_reward_sum, smoothed_reward))
+    log_rewards(episode_reward_sum, episode_n)
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
