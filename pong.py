@@ -20,6 +20,7 @@ import os
 import tensorflow as tf
 
 from policy_network import Network
+from utils import prepro2, EnvWrapper, discount_rewards
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
@@ -37,33 +38,7 @@ DOWN_ACTION = 3
 # Mapping from action values to outputs from the policy network
 action_dict = {DOWN_ACTION: 0, UP_ACTION: 1}
 
-
-# From Andrej's code
-def prepro(I):
-    """ prepro 210x160x3 uint8 frame into 80x80x1 float matrix """
-    I = I[35:195]  # crop
-    I = I[::2, ::2, 0]  # downsample by factor of 2
-    I[I == 144] = 0  # erase background (background type 1)
-    I[I == 109] = 0  # erase background (background type 2)
-    I[I != 0] = 1  # everything else (paddles, ball) just set to 1
-    return np.expand_dims(I.astype(np.float), -1)
-
-
-def discount_rewards(rewards, discount_factor):
-    discounted_rewards = np.zeros_like(rewards)
-    for t in range(len(rewards)):
-        discounted_reward_sum = 0
-        discount = 1
-        for k in range(t, len(rewards)):
-            discounted_reward_sum += rewards[k] * discount
-            discount *= discount_factor
-            if rewards[k] != 0:
-                # Don't count rewards from subsequent rounds
-                break
-        discounted_rewards[t] = discounted_reward_sum
-    return discounted_rewards
-
-env = gym.make('Pong-v0')
+env = EnvWrapper(gym.make('Pong-v0'), prepro2=prepro2)
 
 network = Network(
     args.hidden_layer_size, args.learning_rate, checkpoints_dir='checkpoints')
@@ -92,40 +67,42 @@ def log_rewards(reward_sum, step):
     summ = network.sess.run(reward_summary)
     summary_writer.add_summary(summ, step)
 
+
 while True:
     print("Starting episode %d" % episode_n)
 
     episode_done = False
     episode_reward_sum = 0
+    frame_stack = []
+
+    env.reset()
+    for i in range(4):
+        o, _, _, _ = env.step(0) # do nothing
+        frame_stack.append(o)
 
     round_n = 1
-
-    last_observation = env.reset()
-    last_observation = prepro(last_observation)
-    action = env.action_space.sample()
-    observation, _, _, _ = env.step(action)
-    observation = prepro(observation)
     n_steps = 1
 
     while not episode_done:
         if args.render:
             env.render()
 
-        observation_delta = observation - last_observation
-        last_observation = observation
-        up_probability = network.forward_pass(observation_delta)[0]
+        up_probability = network.forward_pass(frame_stack)[0]
         if np.random.uniform() < up_probability:
             action = UP_ACTION
         else:
             action = DOWN_ACTION
 
-        observation, reward, episode_done, info = env.step(action)
-        observation = prepro(observation)
+        observation, reward, episode_done, _ = env.step(action)
         episode_reward_sum += reward
         n_steps += 1
 
-        tup = (observation_delta, action_dict[action], reward)
+        tup = (frame_stack, action_dict[action], reward)
         batch_state_action_reward_tuples.append(tup)
+
+        # NB this needs to happen _after_ we've recorded the last frame_stack
+        frame_stack[:-1] = frame_stack[1:]
+        frame_stack[-1] = observation
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
