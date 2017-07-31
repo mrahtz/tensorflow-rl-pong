@@ -2,8 +2,6 @@ import os.path
 import numpy as np
 import tensorflow as tf
 
-OBSERVATIONS_SIZE = 6400
-
 
 class Network:
     def __init__(self, hidden_layer_size, learning_rate, checkpoints_dir):
@@ -12,26 +10,49 @@ class Network:
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
-                                           [None, OBSERVATIONS_SIZE])
+                                           [None, 80, 80, 1])
         # +1 for up, -1 for down
         self.sampled_actions = tf.placeholder(tf.float32, [None, 1])
         self.advantage = tf.placeholder(
             tf.float32, [None, 1], name='advantage')
 
-        h = tf.layers.dense(
-            self.observations,
-            units=hidden_layer_size,
-            activation=tf.nn.relu,
-            kernel_initializer=tf.contrib.layers.xavier_initializer())
+        x = tf.layers.conv2d(
+                inputs=self.observations,
+                filters=32,
+                kernel_size=8,
+                strides=4,
+                activation=tf.nn.relu)
+
+        x = tf.layers.conv2d(
+                inputs=x,
+                filters=64,
+                kernel_size=4,
+                strides=2,
+                activation=tf.nn.relu)
+
+        x = tf.layers.conv2d(
+                inputs=x,
+                filters=64,
+                kernel_size=3,
+                strides=1,
+                activation=tf.nn.relu)
+
+        w, h, f = x.shape[1:]
+        x = tf.reshape(x, [-1, int(w * h * f)])
+
+        x = tf.layers.dense(
+                inputs=x,
+                units=512,
+                activation=tf.nn.relu)
 
         self.up_probability = tf.layers.dense(
-            h,
+            x,
             units=1,
             activation=tf.sigmoid,
             kernel_initializer=tf.contrib.layers.xavier_initializer())
 
         # Train based on the log probability of the sampled action.
-        # 
+        #
         # The idea is to encourage actions taken in rounds where the agent won,
         # and discourage actions in rounds where the agent lost.
         # More specifically, we want to increase the log probability of winning
@@ -65,7 +86,7 @@ class Network:
     def forward_pass(self, observations):
         up_probability = self.sess.run(
             self.up_probability,
-            feed_dict={self.observations: observations.reshape([1, -1])})
+            feed_dict={self.observations: [observations]})
         return up_probability
 
     def train(self, state_action_reward_tuples):
@@ -73,7 +94,7 @@ class Network:
               len(state_action_reward_tuples))
 
         states, actions, rewards = zip(*state_action_reward_tuples)
-        states = np.vstack(states)
+        states = np.array(states)
         actions = np.vstack(actions)
         rewards = np.vstack(rewards)
 
