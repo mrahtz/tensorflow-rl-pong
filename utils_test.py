@@ -2,7 +2,10 @@ import numpy as np
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-from utils import EnvWrapper
+import argparse
+import gym
+from gym.utils.play import play
+from utils import EnvWrapper, prepro2
 
 class DummyEnv:
     def __init__(self):
@@ -62,5 +65,16 @@ def test_envwrapper():
     env = EnvWrapper(DummyEnv(), pool=True, frameskip=3)
     test(env)
 
+def test_prepro():
+    env = EnvWrapper(gym.make('Pong-v0'),
+        pool=False, frameskip=1, prepro2=prepro2)
+    play(env)
+
 if __name__ == '__main__':
-    test_envwrapper()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('test')
+    args = parser.parse_args()
+    if args.test == 'envwrapper':
+        test_envwrapper()
+    elif args.test == 'prepro':
+        test_prepro()
