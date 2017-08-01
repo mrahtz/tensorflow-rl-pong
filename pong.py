@@ -20,7 +20,7 @@ import os
 import tensorflow as tf
 
 from policy_network import Network
-from utils import prepro2, EnvWrapper, discount_rewards
+from utils import EnvWrapper, prepro2, discount_rewards
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--hidden_layer_size', type=int, default=200)
@@ -67,42 +67,37 @@ def log_rewards(reward_sum, step):
     summ = network.sess.run(reward_summary)
     summary_writer.add_summary(summ, step)
 
-
 while True:
     print("Starting episode %d" % episode_n)
 
     episode_done = False
     episode_reward_sum = 0
-    frame_stack = []
-
-    env.reset()
-    for i in range(4):
-        o, _, _, _ = env.step(0) # do nothing
-        frame_stack.append(o)
 
     round_n = 1
+
+    last_observation = env.reset()
+    action = env.action_space.sample()
+    observation, _, _, _ = env.step(action)
     n_steps = 1
 
     while not episode_done:
         if args.render:
             env.render()
 
-        up_probability = network.forward_pass(frame_stack)[0]
+        observation_delta = observation - last_observation
+        last_observation = observation
+        up_probability = network.forward_pass(observation_delta)[0]
         if np.random.uniform() < up_probability:
             action = UP_ACTION
         else:
             action = DOWN_ACTION
 
-        observation, reward, episode_done, _ = env.step(action)
+        observation, reward, episode_done, info = env.step(action)
         episode_reward_sum += reward
         n_steps += 1
 
-        tup = (frame_stack, action_dict[action], reward)
+        tup = (observation_delta, action_dict[action], reward)
         batch_state_action_reward_tuples.append(tup)
-
-        # NB this needs to happen _after_ we've recorded the last frame_stack
-        frame_stack[:-1] = frame_stack[1:]
-        frame_stack[-1] = observation
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
