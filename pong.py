@@ -97,7 +97,7 @@ while True:
         episode_reward_sum += reward
         n_steps += 1
 
-        tup = (frame_stack, action_dict[action], reward)
+        tup = (np.copy(frame_stack), action_dict[action], reward)
         batch_state_action_reward_tuples.append(tup)
 
         # NB this needs to happen _after_ we've recorded the last frame_stack
