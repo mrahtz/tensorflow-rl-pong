@@ -22,6 +22,7 @@ class EnvWrapper():
         # 1 = don't skip
         # 2 = skip every other frame
         self.frameskip = frameskip
+        self.action_space = env.action_space
         # gym.utils.play() wants these two
         self.observation_space = env.observation_space
         self.unwrapped = env.unwrapped
