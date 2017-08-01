@@ -84,6 +84,7 @@ class Network:
         self.saver.save(self.sess, self.checkpoint_file)
 
     def forward_pass(self, observations):
+        observations = np.expand_dims(observations, -1)
         up_probability = self.sess.run(
             self.up_probability,
             feed_dict={self.observations: [observations]})
@@ -95,6 +96,7 @@ class Network:
 
         states, actions, rewards = zip(*state_action_reward_tuples)
         states = np.array(states)
+        states = np.expand_dims(states, -1)
         actions = np.vstack(actions)
         rewards = np.vstack(rewards)
 
