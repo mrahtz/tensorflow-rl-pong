@@ -12,6 +12,7 @@ class DummyEnv:
         self.i = 0
         self.observation_space = None
         self.unwrapped = None
+        self.action_space = None
 
     def reset(self):
         o = np.zeros((210, 160, 3))
@@ -19,16 +20,17 @@ class DummyEnv:
 
     def step(self, a):
         o = np.zeros((210, 160, 3))
+        spacing = 5
         # Draw a horizontal series of marks
         draw_y = 10
-        draw_x = 10
+        draw_x = spacing
         while draw_x < 160:
             o[draw_y, draw_x, 0] = 255
-            draw_x += 10
+            draw_x += spacing
         # Draw a mark below the mark corresponding
         # to the current frame
         draw_y = 20
-        draw_x = 10 + self.i * 10
+        draw_x = spacing + self.i * spacing
         o[draw_y, draw_x, 0] = 255
         self.i += 1
         return o, 0, False, None
