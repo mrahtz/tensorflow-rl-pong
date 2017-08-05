@@ -38,7 +38,7 @@ DOWN_ACTION = 3
 # Mapping from action values to outputs from the policy network
 action_dict = {DOWN_ACTION: 0, UP_ACTION: 1}
 
-env = EnvWrapper(gym.make('Pong-v0'), prepro2=prepro2, frameskip=4)
+env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro2=prepro2, frameskip=4)
 
 network = Network(
     args.hidden_layer_size, args.learning_rate, checkpoints_dir='checkpoints')
