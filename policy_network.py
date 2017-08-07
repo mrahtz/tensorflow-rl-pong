@@ -1,10 +1,9 @@
 import os.path
 import numpy as np
 import tensorflow as tf
-from IPython.core.debugger import Tracer
-import matplotlib
-matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
+#import matplotlib
+#matplotlib.use('Qt5Agg')
+#import matplotlib.pyplot as plt
 
 DEBUG1 = False
 DEBUG2 = False
