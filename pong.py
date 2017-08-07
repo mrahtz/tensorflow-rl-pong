@@ -37,8 +37,7 @@ args = parser.parse_args()
 NO_ACTION = 1
 UP_ACTION = 2
 DOWN_ACTION = 3
-# Mapping from action values to outputs from the policy network
-action_dict = {NO_ACTION: 0, DOWN_ACTION: 1, UP_ACTION: 2}
+ACTIONS = [NO_ACTION, UP_ACTION, DOWN_ACTION]
 
 print("Initialising...")
 
@@ -93,13 +92,13 @@ while True:
             env.render()
 
         a_p = network.forward_pass(frame_stack)[0]
-        action = np.random.choice(list(action_dict.keys()), p=a_p)
+        action = np.random.choice(ACTIONS, p=a_p)
 
         observation, reward, episode_done, _ = env.step(action)
         episode_reward_sum += reward
         n_steps += 1
 
-        tup = (np.copy(frame_stack), action_dict[action], reward)
+        tup = (np.copy(frame_stack), ACTIONS.index(action), reward)
         batch_state_action_reward_tuples.append(tup)
 
         # NB this needs to happen _after_ we've recorded the last frame_stack
