@@ -17,13 +17,14 @@ import gym
 import time
 
 import os
+print("Importing Tensorflow...")
 import tensorflow as tf
+print("Done!")
 
 from policy_network import Network
 from utils import prepro2, EnvWrapper, discount_rewards
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--hidden_layer_size', type=int, default=200)
 parser.add_argument('--learning_rate', type=float, default=0.0005)
 parser.add_argument('--batch_size_episodes', type=int, default=1)
 parser.add_argument('--checkpoint_every_n_episodes', type=int, default=10)
@@ -33,15 +34,18 @@ parser.add_argument('--render', action='store_true')
 args = parser.parse_args()
 
 # Action values to send to gym environment to move paddle up/down
+NO_ACTION = 1
 UP_ACTION = 2
 DOWN_ACTION = 3
 # Mapping from action values to outputs from the policy network
-action_dict = {DOWN_ACTION: 0, UP_ACTION: 1}
+action_dict = {NO_ACTION: 0, DOWN_ACTION: 1, UP_ACTION: 2}
+
+print("Initialising...")
 
 env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro2=prepro2, frameskip=4)
 
 network = Network(
-    args.hidden_layer_size, args.learning_rate, checkpoints_dir='checkpoints')
+    args.learning_rate, checkpoints_dir='checkpoints')
 if args.load_checkpoint:
     network.load_checkpoint()
 
@@ -67,6 +71,7 @@ def log_rewards(reward_sum, step):
     summ = network.sess.run(reward_summary)
     summary_writer.add_summary(summ, step)
 
+print("Done!")
 
 while True:
     print("Starting episode %d" % episode_n)
@@ -87,11 +92,8 @@ while True:
         if args.render:
             env.render()
 
-        up_probability = network.forward_pass(frame_stack)[0]
-        if np.random.uniform() < up_probability:
-            action = UP_ACTION
-        else:
-            action = DOWN_ACTION
+        a_p = network.forward_pass(frame_stack)[0]
+        action = np.random.choice(list(action_dict.keys()), p=a_p)
 
         observation, reward, episode_done, _ = env.step(action)
         episode_reward_sum += reward

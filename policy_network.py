@@ -9,18 +9,19 @@ import matplotlib.pyplot as plt
 DEBUG1 = False
 DEBUG2 = False
 
+N_ACTIONS = 3
+
 class Network:
-    def __init__(self, hidden_layer_size, learning_rate, checkpoints_dir):
+    def __init__(self, learning_rate, checkpoints_dir):
         self.learning_rate = learning_rate
 
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
                                            [None, 80, 80, 4])
-        # +1 for up, -1 for down
-        self.sampled_actions = tf.placeholder(tf.float32, [None, 1])
+        self.sampled_actions = tf.placeholder(tf.float32, [None])
         self.advantage = tf.placeholder(
-            tf.float32, [None, 1], name='advantage')
+            tf.float32, [None], name='advantage')
 
         x = tf.layers.conv2d(
                 inputs=self.observations,
@@ -51,27 +52,25 @@ class Network:
                 units=512,
                 activation=tf.nn.relu)
 
-        self.up_probability = tf.layers.dense(
-            x,
-            units=1,
-            activation=tf.sigmoid,
-            kernel_initializer=tf.contrib.layers.xavier_initializer())
+        a_logits = tf.layers.dense(
+        inputs=x,
+        units=N_ACTIONS,
+        activation=None)
 
-        # Train based on the log probability of the sampled action.
-        #
-        # The idea is to encourage actions taken in rounds where the agent won,
-        # and discourage actions in rounds where the agent lost.
-        # More specifically, we want to increase the log probability of winning
-        # actions, and decrease the log probability of losing actions.
-        #
-        # Which direction to push the log probability in is controlled by
-        # 'advantage', which is the reward for each action in each round.
-        # Positive reward pushes the log probability of chosen action up;
-        # negative reward pushes the log probability of the chosen action down.
-        self.loss = tf.losses.log_loss(
-            labels=self.sampled_actions,
-            predictions=self.up_probability,
-            weights=self.advantage)
+        self.a_softmax = tf.nn.softmax(a_logits)
+
+        p = 0
+        for i in range(N_ACTIONS):
+            p += tf.cast(tf.equal(self.sampled_actions, i), tf.float32) \
+                 * self.a_softmax[:, i]
+
+        # Log probability: higher is better for actions we want to encourage
+        # Negative log probability: lower is better for actions we want to
+        # encourage
+        # 1e-7: prevent log(0)
+        nlp = -1 * tf.log(p + 1e-7)
+
+        self.loss = tf.reduce_mean(nlp * self.advantage)
         optimizer = tf.train.AdamOptimizer(self.learning_rate)
         self.train_op = optimizer.minimize(self.loss)
 
@@ -99,10 +98,10 @@ class Network:
                 plt.figure()
                 plt.imshow(frame_stack[:, :, i])
             plt.show()
-        up_probability = self.sess.run(
-            self.up_probability,
+        a_p = self.sess.run(
+            self.a_softmax,
             feed_dict={self.observations: [frame_stack]})
-        return up_probability
+        return a_p
 
     def train(self, state_action_reward_tuples):
         global DEBUG2
@@ -112,8 +111,8 @@ class Network:
         states, actions, rewards = zip(*state_action_reward_tuples)
         states = np.array(states)
         states = np.moveaxis(states, source=1, destination=-1)
-        actions = np.vstack(actions)
-        rewards = np.vstack(rewards)
+        actions = np.vstack(actions).flatten()
+        rewards = np.vstack(rewards).flatten()
 
         if DEBUG2:
             for j in range(states.shape[0]):
