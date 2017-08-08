@@ -82,6 +82,15 @@ def log_rewards(reward_sum, step):
 
 print("Done!")
 
+def check_noop_early_termination(r, d):
+    if r != 0 or d:
+        print("Error: episode finished or environment done during no-ops",
+                file=sys.stderr)
+        # I don't want to this to fail silently; this should require
+        # a decrease in the max. number of no-ops
+        sys.exit(1)
+
+
 while True:
     print("Starting episode %d" % episode_n)
 
@@ -90,23 +99,19 @@ while True:
     frame_stack = deque(maxlen=N_FRAMES_STACKED)
 
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
-    n_noops = 34
+    n_noops = 35
     print("%d noops..." % n_noops)
     for i in range(n_noops):
         o, r, d, _ = env.step(0)
-        if r != 0 or d:
-            print("Error: episode finished or environment done during no-ops",
-                    file=sys.stderr)
-            # I don't want to this to fail silently; this should require
-            # a decrease in the max. number of no-ops
-            #sys.exit(1)
+        check_noop_early_termination(r, d)
         frame_stack.append(o)
         if args.render:
             env.render()
 
     while len(frame_stack) < N_FRAMES_STACKED:
         print("One more...")
-        o, _, _, _ = env.step(0)
+        o, r, d, _ = env.step(0)
+        check_noop_early_termination(r, d)
         frame_stack.append(o)
 
     n_steps = 0
