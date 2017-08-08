@@ -22,7 +22,7 @@ import tensorflow as tf
 print("Done!")
 
 from policy_network import Network
-from utils import pong_prepro, EnvWrapper, discount_rewards
+from utils import prepro2, EnvWrapper, discount_rewards
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--learning_rate', type=float, default=0.0001)
@@ -43,7 +43,8 @@ N_MAX_NOOPS = 30
 
 print("Initialising...")
 
-env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=pong_prepro, frameskip=4)
+env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro2=prepro2, frameskip=4)
+env.reset()
 
 network = Network(
     args.learning_rate, checkpoints_dir='checkpoints')
@@ -72,6 +73,7 @@ def log_rewards(reward_sum, step):
     summ = network.sess.run(reward_summary)
     summary_writer.add_summary(summ, step)
 
+
 print("Done!")
 
 while True:
@@ -81,10 +83,8 @@ while True:
     episode_reward_sum = 0
     frame_stack = []
 
-    env.reset()
-
-    print("Noops...")
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
+    print("%d noops..." % n_noops)
     for i in range(n_noops):
         env.step(0)
         if args.render:
@@ -92,10 +92,9 @@ while True:
     print("Done")
 
     for i in range(4):
-        o, _, _, _ = env.step(0) # do nothing
+        o, _, _, _ = env.step(0)  # do nothing
         frame_stack.append(o)
 
-    round_n = 1
     n_steps = 1
 
     while not episode_done:
@@ -105,7 +104,7 @@ while True:
         a_p = network.forward_pass(frame_stack)[0]
         action = np.random.choice(ACTIONS, p=a_p)
 
-        observation, reward, episode_done, _ = env.step(action)
+        observation, reward, env_done, _ = env.step(action)
         episode_reward_sum += reward
         n_steps += 1
 
@@ -117,21 +116,28 @@ while True:
         frame_stack[-1] = observation
 
         if reward == -1:
-            print("Round %d: %d time steps; lost..." % (round_n, n_steps))
+            print("%d time steps; lost..." % n_steps)
         elif reward == +1:
-            print("Round %d: %d time steps; won!" % (round_n, n_steps))
+            print("%d time steps; won!" % n_steps)
         if reward != 0:
-            round_n += 1
+            episode_done = True
             n_steps = 0
 
-    print("Episode %d finished after %d rounds" % (episode_n, round_n))
+        if env_done:
+            print("Environment done; resetting")
+            env.reset()
+
+    print("Episode %d finished" % (episode_n))
 
     log_rewards(episode_reward_sum, episode_n)
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
+        print(rewards)
         rewards = discount_rewards(rewards, args.discount_factor)
+        print(rewards)
         rewards -= np.mean(rewards)
+        print(rewards)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         network.train(batch_state_action_reward_tuples)

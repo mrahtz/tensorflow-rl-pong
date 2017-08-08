@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.misc import imresize
 
 # Based on Andrej's code
 def prepro2(I):
@@ -10,23 +9,16 @@ def prepro2(I):
     I[I > 0.4] = 1 # everything else (paddles, ball) just set to 1
     return I.astype(np.float)
 
-def pong_prepro(o):
-    o[:24] = 0 # black out score area
-    o = np.mean(o, axis=2)
-    o = imresize(o, (84, 84))
-    o = o / 255.0
-    return o
-
-def prepro_orig(o):
+def prepro(o):
     o = np.mean(o, axis=2)
     o = o / 255.0
     return o
 
 class EnvWrapper():
-    def __init__(self, env, pool=False, frameskip=1, prepro=prepro_orig):
+    def __init__(self, env, pool=False, frameskip=1, prepro2=None):
         self.env = env
         self.pool = pool
-        self.prepro = prepro
+        self.prepro2 = prepro2
         # 1 = don't skip
         # 2 = skip every other frame
         self.frameskip = frameskip
@@ -38,7 +30,9 @@ class EnvWrapper():
     def reset(self):
         o = self.env.reset()
         self.prev_o = o
-        o = self.prepro(o)
+        o = prepro(o)
+        if self.prepro2 is not None:
+            o = self.prepro2(o)
         return o
 
     def step(self, a):
@@ -59,7 +53,9 @@ class EnvWrapper():
                 o = np.maximum(o_raw, self.prev_o)
                 self.prev_o = o_raw
             i += 1
-        o = self.prepro(o)
+        o = prepro(o)
+        if self.prepro2 is not None:
+            o = self.prepro2(o)
         r = sum(rs)
         info = None
         return o, r, done, info

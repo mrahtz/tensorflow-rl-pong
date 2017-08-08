@@ -17,7 +17,7 @@ class Network:
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
-                                           [None, 84, 84, 4])
+                                           [None, 80, 80, 4])
         self.sampled_actions = tf.placeholder(tf.float32, [None])
         self.advantage = tf.placeholder(
             tf.float32, [None], name='advantage')
@@ -89,7 +89,7 @@ class Network:
 
     def forward_pass(self, frame_stack):
         frame_stack = np.array(frame_stack)
-        # from 4x84x84 to 84x84x4
+        # from 4x80x80 to 80x80x4
         frame_stack = np.moveaxis(frame_stack, source=0, destination=-1)
         global DEBUG1
         if DEBUG1:
