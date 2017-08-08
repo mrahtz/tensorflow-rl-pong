@@ -39,6 +39,8 @@ UP_ACTION = 2
 DOWN_ACTION = 3
 ACTIONS = [NO_ACTION, UP_ACTION, DOWN_ACTION]
 
+N_MAX_NOOPS = 30
+
 print("Initialising...")
 
 env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro2=prepro2, frameskip=4)
@@ -80,6 +82,15 @@ while True:
     frame_stack = []
 
     env.reset()
+
+    print("Noops...")
+    n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
+    for i in range(n_noops):
+        env.step(0)
+        if args.render:
+            env.render()
+    print("Done")
+
     for i in range(4):
         o, _, _, _ = env.step(0) # do nothing
         frame_stack.append(o)
