@@ -16,6 +16,7 @@ import numpy as np
 import gym
 import time
 from collections import deque
+import sys
 
 import os
 print("Importing Tensorflow...")
@@ -40,6 +41,9 @@ UP_ACTION = 2
 DOWN_ACTION = 3
 ACTIONS = [NO_ACTION, UP_ACTION, DOWN_ACTION]
 
+# Might might be 30 because 34 seems to be the maximum number of no-ops you can
+# do at the start of the round in Pong and still allow the agent to take at
+# least one action
 N_MAX_NOOPS = 30
 N_FRAMES_STACKED = 4
 
@@ -86,9 +90,16 @@ while True:
     frame_stack = deque(maxlen=N_FRAMES_STACKED)
 
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
+    n_noops = 34
     print("%d noops..." % n_noops)
     for i in range(n_noops):
-        o, _, _, _ = env.step(0)
+        o, r, d, _ = env.step(0)
+        if r != 0 or d:
+            print("Error: episode finished or environment done during no-ops",
+                    file=sys.stderr)
+            # I don't want to this to fail silently; this should require
+            # a decrease in the max. number of no-ops
+            #sys.exit(1)
         frame_stack.append(o)
         if args.render:
             env.render()
@@ -98,7 +109,9 @@ while True:
         o, _, _, _ = env.step(0)
         frame_stack.append(o)
 
-    n_steps = 1
+    n_steps = 0
+
+    input()
 
     while not episode_done:
         if args.render:
@@ -108,8 +121,8 @@ while True:
         action = np.random.choice(ACTIONS, p=a_p)
 
         observation, reward, env_done, _ = env.step(action)
-        episode_reward_sum += reward
         n_steps += 1
+        episode_reward_sum += reward
 
         tup = (np.copy(frame_stack), ACTIONS.index(action), reward)
         batch_state_action_reward_tuples.append(tup)
@@ -140,6 +153,7 @@ while True:
         #print(rewards)
         rewards -= np.mean(rewards)
         #print(rewards)
+        assert(np.std(rewards) != 0)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         network.train(batch_state_action_reward_tuples)
@@ -148,6 +162,6 @@ while True:
     if episode_n % args.checkpoint_every_n_episodes == 0:
         network.save_checkpoint()
 
-    #input()
+    input()
 
     episode_n += 1
