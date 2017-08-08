@@ -41,7 +41,7 @@ UP_ACTION = 2
 DOWN_ACTION = 3
 ACTIONS = [NO_ACTION, UP_ACTION, DOWN_ACTION]
 
-# Might might be 30 because 34 seems to be the maximum number of no-ops you can
+# This might be 30 because 34 seems to be the maximum number of no-ops you can
 # do at the start of the round in Pong and still allow the agent to take at
 # least one action
 N_MAX_NOOPS = 30
@@ -99,7 +99,6 @@ while True:
     frame_stack = deque(maxlen=N_FRAMES_STACKED)
 
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
-    n_noops = 35
     print("%d noops..." % n_noops)
     for i in range(n_noops):
         o, r, d, _ = env.step(0)
@@ -115,8 +114,6 @@ while True:
         frame_stack.append(o)
 
     n_steps = 0
-
-    input()
 
     while not episode_done:
         if args.render:
@@ -153,11 +150,8 @@ while True:
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
-        #print(rewards)
         rewards = discount_rewards(rewards, args.discount_factor)
-        #print(rewards)
         rewards -= np.mean(rewards)
-        #print(rewards)
         assert(np.std(rewards) != 0)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
@@ -166,7 +160,5 @@ while True:
 
     if episode_n % args.checkpoint_every_n_episodes == 0:
         network.save_checkpoint()
-
-    input()
 
     episode_n += 1
