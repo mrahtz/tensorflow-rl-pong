@@ -29,7 +29,7 @@ from utils import prepro2, EnvWrapper, discount_rewards
 parser = argparse.ArgumentParser()
 parser.add_argument('--learning_rate', type=float, default=0.0001)
 parser.add_argument('--batch_size_episodes', type=int, default=1)
-parser.add_argument('--checkpoint_every_n_episodes', type=int, default=10)
+parser.add_argument('--checkpoint_every_n_episodes', type=int, default=100)
 parser.add_argument('--load_checkpoint', action='store_true')
 parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
