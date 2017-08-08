@@ -92,9 +92,9 @@ while True:
         frame_stack.append(o)
         if args.render:
             env.render()
-    print("Done")
 
     while len(frame_stack) < N_FRAMES_STACKED:
+        print("One more...")
         o, _, _, _ = env.step(0)
         frame_stack.append(o)
 
@@ -135,11 +135,11 @@ while True:
 
     if episode_n % args.batch_size_episodes == 0:
         states, actions, rewards = zip(*batch_state_action_reward_tuples)
-        print(rewards)
+        #print(rewards)
         rewards = discount_rewards(rewards, args.discount_factor)
-        print(rewards)
+        #print(rewards)
         rewards -= np.mean(rewards)
-        print(rewards)
+        #print(rewards)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         network.train(batch_state_action_reward_tuples)
@@ -147,5 +147,7 @@ while True:
 
     if episode_n % args.checkpoint_every_n_episodes == 0:
         network.save_checkpoint()
+
+    #input()
 
     episode_n += 1
