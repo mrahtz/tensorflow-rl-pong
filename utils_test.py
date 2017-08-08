@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import numpy as np
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -5,7 +7,7 @@ import matplotlib.pyplot as plt
 import argparse
 import gym
 from gym.utils.play import play
-from utils import EnvWrapper, prepro2
+from utils import EnvWrapper, pong_prepro
 
 class DummyEnv:
     def __init__(self):
@@ -69,7 +71,7 @@ def test_envwrapper():
 
 def test_prepro():
     env = EnvWrapper(gym.make('PongNoFrameskip-v4'),
-        pool=False, frameskip=4, prepro2=prepro2)
+        pool=False, frameskip=4, prepro=pong_prepro)
     play(env)
 
 if __name__ == '__main__':
