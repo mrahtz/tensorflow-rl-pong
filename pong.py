@@ -22,7 +22,7 @@ import tensorflow as tf
 print("Done!")
 
 from policy_network import Network
-from utils import pong_prepro, EnvWrapper, discount_rewards
+from utils import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--learning_rate', type=float, default=0.0001)
@@ -43,7 +43,7 @@ N_MAX_NOOPS = 30
 
 print("Initialising...")
 
-env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=pong_prepro, frameskip=4)
+env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=karpathy_prepro, frameskip=4)
 
 network = Network(
     args.learning_rate, checkpoints_dir='checkpoints')

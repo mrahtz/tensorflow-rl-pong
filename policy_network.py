@@ -17,7 +17,7 @@ class Network:
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
-                                           [None, 84, 84, 4])
+                                           [None, 80, 80, 4])
         self.sampled_actions = tf.placeholder(tf.float32, [None])
         self.advantage = tf.placeholder(
             tf.float32, [None], name='advantage')
