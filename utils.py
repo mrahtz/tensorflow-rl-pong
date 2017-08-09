@@ -1,4 +1,5 @@
 import numpy as np
+from skimage.color import rgb2yuv
 from scipy.misc import imresize
 
 # Based on Andrej's code
@@ -11,10 +12,10 @@ def prepro2(I):
     return I.astype(np.float)
 
 def pong_prepro(o):
-    o[:24] = 0 # black out score area
-    o = np.mean(o, axis=2)
-    o = imresize(o, (84, 84))
-    o = o / 255.0
+    #o[:24] = 0  # black out score area
+    o = rgb2yuv(o)[:, :, 0]  # extract Y (between 0 and 1)
+    # mode='F': floating-point pixels
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
     return o
 
 def prepro_orig(o):
