@@ -3,7 +3,9 @@ from skimage.color import rgb2yuv
 from scipy.misc import imresize
 
 # Based on Andrej's code
-def prepro2(I):
+def karpathy_prepro(I):
+    I = np.mean(I, axis=2)
+    I = I / 255.0
     """ prepro 210x160 frame into 80x80 frame """
     I = I[34:194]  # crop
     I = I[::2, ::2]  # downsample by factor of 2
@@ -18,13 +20,8 @@ def pong_prepro(o):
     o = imresize(o, (84, 84), interp='bilinear', mode='F')
     return o
 
-def prepro_orig(o):
-    o = np.mean(o, axis=2)
-    o = o / 255.0
-    return o
-
 class EnvWrapper():
-    def __init__(self, env, pool=False, frameskip=1, prepro=prepro_orig):
+    def __init__(self, env, pool=False, frameskip=1, prepro=None):
         self.env = env
         self.pool = pool
         self.prepro = prepro

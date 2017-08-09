@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import argparse
 import gym
 from gym.utils.play import play
-from utils import EnvWrapper, pong_prepro
+from utils import *
 
 class DummyEnv:
     def __init__(self):
@@ -71,7 +71,7 @@ def test_envwrapper():
 
 def test_prepro():
     env = EnvWrapper(gym.make('PongNoFrameskip-v4'),
-        pool=False, frameskip=4, prepro=pong_prepro)
+        pool=False, frameskip=4, prepro=karpathy_prepro)
     play(env)
 
 if __name__ == '__main__':
