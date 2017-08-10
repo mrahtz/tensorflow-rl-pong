@@ -20,6 +20,12 @@ def pong_prepro(o):
     o = imresize(o, (84, 84), interp='bilinear', mode='F')
     return o
 
+def prepro_a(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o = o[::2, ::2]  # downsample by factor of 2
+    return o
+
 class EnvWrapper():
     def __init__(self, env, pool=False, frameskip=1, prepro=None):
         self.env = env
