@@ -32,6 +32,15 @@ def prepro_b(o):
     o = imresize(o, (84, 84), interp='bilinear', mode='F')
     return o
 
+def prepro_c(I):
+    I = np.mean(I, axis=2)
+    I = I / 255.0
+    I = I[34:194]  # crop
+    I[I <= 0.4] = 0 # erase background
+    I[I > 0.4] = 1 # everything else (paddles, ball) just set to 1
+    I = imresize(I, (84, 84), interp='bilinear', mode='F')
+    return I
+
 class EnvWrapper():
     def __init__(self, env, pool=False, frameskip=1, prepro=None):
         self.env = env

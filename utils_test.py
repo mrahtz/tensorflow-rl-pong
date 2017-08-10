@@ -71,7 +71,7 @@ def test_envwrapper():
 
 def test_prepro():
     env = EnvWrapper(gym.make('PongNoFrameskip-v4'),
-        pool=False, frameskip=4, prepro=prepro_b)
+        pool=False, frameskip=4, prepro=prepro_c)
     play(env)
 
 if __name__ == '__main__':
