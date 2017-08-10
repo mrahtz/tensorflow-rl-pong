@@ -15,6 +15,7 @@ import pickle
 import numpy as np
 import gym
 import time
+from collections import deque
 
 import os
 print("Importing Tensorflow...")
@@ -40,6 +41,7 @@ DOWN_ACTION = 3
 ACTIONS = [NO_ACTION, UP_ACTION, DOWN_ACTION]
 
 N_MAX_NOOPS = 30
+N_FRAMES_STACKED = 4
 
 print("Initialising...")
 
@@ -79,20 +81,21 @@ while True:
 
     episode_done = False
     episode_reward_sum = 0
-    frame_stack = []
+    frame_stack = deque(maxlen=N_FRAMES_STACKED)
 
     env.reset()
 
     print("Noops...")
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
     for i in range(n_noops):
-        env.step(0)
+        o, _, _, _ = env.step(0)
+        frame_stack.append(o)
         if args.render:
             env.render()
     print("Done")
 
-    for i in range(4):
-        o, _, _, _ = env.step(0) # do nothing
+    while len(frame_stack) < N_FRAMES_STACKED:
+        o, _, _, _ = env.step(0)
         frame_stack.append(o)
 
     round_n = 1
@@ -113,8 +116,7 @@ while True:
         batch_state_action_reward_tuples.append(tup)
 
         # NB this needs to happen _after_ we've recorded the last frame_stack
-        frame_stack[:-1] = frame_stack[1:]
-        frame_stack[-1] = observation
+        frame_stack.append(observation)
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
