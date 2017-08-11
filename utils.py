@@ -41,6 +41,13 @@ def prepro_c(I):
     I = imresize(I, (84, 84), interp='bilinear', mode='F')
     return I
 
+def prepro_d(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    o[o < 0.343] = 0
+    return o
+
 class EnvWrapper():
     def __init__(self, env, pool=False, frameskip=1, prepro=None):
         self.env = env

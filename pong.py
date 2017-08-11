@@ -43,7 +43,7 @@ N_MAX_NOOPS = 30
 
 print("Initialising...")
 
-env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=prepro_c, frameskip=4)
+env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=prepro_d, frameskip=4)
 
 network = Network(
     args.learning_rate, checkpoints_dir='checkpoints')
