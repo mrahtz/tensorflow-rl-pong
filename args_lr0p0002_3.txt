@@ -1,0 +1,7 @@
+batch_size_episodes: 1
+render: False
+load_checkpoint: False
+learning_rate: 0.0002
+run_name: lr0p0002_3
+discount_factor: 0.99
+checkpoint_every_n_episodes: 10
