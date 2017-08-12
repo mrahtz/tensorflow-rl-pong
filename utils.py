@@ -1,4 +1,6 @@
 import numpy as np
+from gym import Wrapper
+import pickle
 
 # Based on Andrej's code
 def prepro2(I):
@@ -13,6 +15,28 @@ def prepro(o):
     o = np.mean(o, axis=2)
     o = o / 255.0
     return o
+
+class Recorder(Wrapper):
+    def __init__(self, env):
+        super(Recorder, self).__init__(env)
+        self.buffer = []
+        self.flush_n_steps = 10000
+
+    def _step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        tup = (action, observation, reward)
+        self.buffer.append(tup)
+
+        if len(self.buffer) % self.flush_n_steps == 0:
+            self.flush_buffer()
+
+        return observation, reward, done, info
+
+    def flush_buffer(self):
+        print("Flushing experience buffer...")
+        with open('experience.pickle', 'wb') as f:
+            pickle.dump(self.buffer, f)
+
 
 class EnvWrapper():
     def __init__(self, env, pool=False, frameskip=1, prepro2=None):

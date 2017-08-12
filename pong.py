@@ -22,7 +22,7 @@ import tensorflow as tf
 print("Done!")
 
 from policy_network import Network
-from utils import prepro2, EnvWrapper, discount_rewards
+from utils import prepro2, EnvWrapper, discount_rewards, Recorder
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--learning_rate', type=float, default=0.0001)
@@ -43,7 +43,7 @@ N_MAX_NOOPS = 30
 
 print("Initialising...")
 
-env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro2=prepro2, frameskip=4)
+env = EnvWrapper(Recorder(gym.make('PongNoFrameskip-v4')), prepro2=prepro2, frameskip=4)
 
 network = Network(
     args.learning_rate, checkpoints_dir='checkpoints')
