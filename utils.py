@@ -84,16 +84,13 @@ class EnvWrapper():
                 o = np.maximum(o_raw, self.prev_o)
                 self.prev_o = o_raw
             i += 1
-        tup = (a, o, r)
-        self.buffer.append(tup)
-        if len(self.buffer) % 1000 == 0:
-            self.flush_buffer()
+        o_noprepro = np.copy(o)
         o = prepro(o)
         if self.prepro2 is not None:
             o = self.prepro2(o)
         r = sum(rs)
         info = None
-        return o, r, done, info
+        return o, r, done, info, o_noprepro
 
     def render(self):
         self.env.render()

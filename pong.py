@@ -82,21 +82,24 @@ while True:
     episode_done = False
     episode_reward_sum = 0
     frame_stack = deque(maxlen=N_FRAMES_STACKED)
+    frame_stack2 = deque(maxlen=N_FRAMES_STACKED)
 
     env.reset()
 
     print("Noops...")
     n_noops = np.random.randint(low=0, high=N_MAX_NOOPS+1)
     for i in range(n_noops):
-        o, _, _, _ = env.step(0)
+        o, _, _, _, on = env.step(0)
         frame_stack.append(o)
+        frame_stack2.append(on)
         if args.render:
             env.render()
     print("Done")
 
     while len(frame_stack) < N_FRAMES_STACKED:
-        o, _, _, _ = env.step(0)
+        o, _, _, _, on = env.step(0)
         frame_stack.append(o)
+        frame_stack.append(on)
 
     round_n = 1
     n_steps = 1
@@ -108,15 +111,16 @@ while True:
         a_p = network.forward_pass(frame_stack)[0]
         action = np.random.choice(ACTIONS, p=a_p)
 
-        observation, reward, episode_done, _ = env.step(action)
+        observation, reward, episode_done, _, on = env.step(action)
         episode_reward_sum += reward
         n_steps += 1
 
-        tup = (np.copy(frame_stack), ACTIONS.index(action), reward)
+        tup = (np.copy(frame_stack), np.copy(frame_stack2), ACTIONS.index(action), reward)
         batch_state_action_reward_tuples.append(tup)
 
         # NB this needs to happen _after_ we've recorded the last frame_stack
         frame_stack.append(observation)
+        frame_stack2.append(on)
 
         if reward == -1:
             print("Round %d: %d time steps; lost..." % (round_n, n_steps))
@@ -131,13 +135,17 @@ while True:
     log_rewards(episode_reward_sum, episode_n)
 
     if episode_n % args.batch_size_episodes == 0:
-        states, actions, rewards = zip(*batch_state_action_reward_tuples)
+        states, states2, actions, rewards = zip(*batch_state_action_reward_tuples)
         rewards = discount_rewards(rewards, args.discount_factor)
         rewards -= np.mean(rewards)
         rewards /= np.std(rewards)
         batch_state_action_reward_tuples = list(zip(states, actions, rewards))
         network.train(batch_state_action_reward_tuples)
         batch_state_action_reward_tuples = []
+
+        t2 = list(zip(states2, actions, rewards))
+        with open('batch_%d.pickle' % episode_n, 'wb') as f:
+            pickle.dump(t2, f)
 
     if episode_n % args.checkpoint_every_n_episodes == 0:
         network.save_checkpoint()
