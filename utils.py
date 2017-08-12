@@ -50,6 +50,13 @@ class EnvWrapper():
         # gym.utils.play() wants these two
         self.observation_space = env.observation_space
         self.unwrapped = env.unwrapped
+        self.buffer = []
+        self.flush_n_steps = 10000
+
+    def flush_buffer(self):
+        print("Flushing experience buffer...")
+        with open('experience.pickle', 'wb') as f:
+            pickle.dump(self.buffer, f)
 
     def reset(self):
         o = self.env.reset()
@@ -77,6 +84,10 @@ class EnvWrapper():
                 o = np.maximum(o_raw, self.prev_o)
                 self.prev_o = o_raw
             i += 1
+        tup = (a, o, r)
+        self.buffer.append(tup)
+        if len(self.buffer) % 1000 == 0:
+            self.flush_buffer()
         o = prepro(o)
         if self.prepro2 is not None:
             o = self.prepro2(o)
