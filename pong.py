@@ -99,7 +99,7 @@ while True:
     while len(frame_stack) < N_FRAMES_STACKED:
         o, _, _, _, on = env.step(0)
         frame_stack.append(o)
-        frame_stack.append(on)
+        frame_stack2.append(on)
 
     round_n = 1
     n_steps = 1
