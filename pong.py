@@ -17,14 +17,17 @@ import gym
 import time
 
 import os
+import os.path
 print("Importing Tensorflow...")
 import tensorflow as tf
 print("Done!")
 
+import arg_logger
 from policy_network import Network
 from utils import *
 
 parser = argparse.ArgumentParser()
+parser.add_argument('run_name')
 parser.add_argument('--learning_rate', type=float, default=0.0005)
 parser.add_argument('--batch_size_episodes', type=int, default=1)
 parser.add_argument('--checkpoint_every_n_episodes', type=int, default=10)
@@ -32,6 +35,7 @@ parser.add_argument('--load_checkpoint', action='store_true')
 parser.add_argument('--discount_factor', type=int, default=0.99)
 parser.add_argument('--render', action='store_true')
 args = parser.parse_args()
+arg_logger.log_args(args, 'args_%s.txt' % args.run_name)
 
 # Action values to send to gym environment to move paddle up/down
 NO_ACTION = 1
@@ -45,8 +49,11 @@ print("Initialising...")
 
 env = EnvWrapper(gym.make('PongNoFrameskip-v4'), prepro=prepro_b, frameskip=4)
 
+checkpoints_dir = os.path.join('checkpoints', args.run_name)
+assert not os.path.exists(checkpoints_dir)
+os.makedirs(checkpoints_dir)
 network = Network(
-    args.learning_rate, checkpoints_dir='checkpoints')
+    args.learning_rate, checkpoints_dir=checkpoints_dir)
 if args.load_checkpoint:
     network.load_checkpoint()
 
@@ -56,7 +63,7 @@ episode_n = 1
 reward_average = None
 reward_average_var = tf.Variable(0.0)
 reward_summary = tf.summary.scalar('reward_average', reward_average_var)
-dirname = 'summaries/' + str(int(time.time()))
+dirname = 'summaries/%s' % args.run_name
 os.makedirs(dirname)
 summary_writer = tf.summary.FileWriter(dirname, flush_secs=1)
 
