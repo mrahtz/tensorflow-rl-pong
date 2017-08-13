@@ -55,6 +55,12 @@ o = o[:100]
 a = a[:100]
 r = r[:100]
 
+print(r[:100])
+from pylab import *
+figure()
+plot(r)
+show()
+
 o = list(o)
 for o_n in range(len(o)):
     frames = []
