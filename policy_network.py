@@ -1,4 +1,5 @@
 import os.path
+import os
 import numpy as np
 import tensorflow as tf
 #import matplotlib
@@ -11,13 +12,13 @@ DEBUG2 = False
 N_ACTIONS = 3
 
 class Network:
-    def __init__(self, learning_rate, checkpoints_dir):
+    def __init__(self, learning_rate, checkpoints_dir, run_name, optimizer):
         self.learning_rate = learning_rate
 
         self.sess = tf.InteractiveSession()
 
         self.observations = tf.placeholder(tf.float32,
-                                           [None, 80, 80, 4])
+                                           [None, 84, 84, 4])
         self.sampled_actions = tf.placeholder(tf.float32, [None])
         self.advantage = tf.placeholder(
             tf.float32, [None], name='advantage')
@@ -70,8 +71,13 @@ class Network:
         nlp = -1 * tf.log(p + 1e-7)
 
         self.loss = tf.reduce_mean(nlp * self.advantage)
-        optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        optimizer = optimizer(self.learning_rate)
         self.train_op = optimizer.minimize(self.loss)
+
+        self.summ = tf.summary.scalar('loss', self.loss)
+        dirname = 'summaries/' + run_name
+        os.makedirs(dirname)
+        self.sw = tf.summary.FileWriter(dirname, flush_secs=1)
 
         tf.global_variables_initializer().run()
 
@@ -102,7 +108,7 @@ class Network:
             feed_dict={self.observations: [frame_stack]})
         return a_p
 
-    def train(self, state_action_reward_tuples):
+    def train(self, state_action_reward_tuples, i):
         global DEBUG2
         print("Training with %d (state, action, reward) tuples" %
               len(state_action_reward_tuples))
@@ -126,3 +132,5 @@ class Network:
             self.advantage: rewards
         }
         self.sess.run(self.train_op, feed_dict)
+        s = self.sess.run(self.summ, feed_dict)
+        self.sw.add_summary(s, i)

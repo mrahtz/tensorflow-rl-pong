@@ -1,9 +1,11 @@
 import numpy as np
-from gym import Wrapper
-import pickle
+from skimage.color import rgb2yuv
+from scipy.misc import imresize
 
 # Based on Andrej's code
-def prepro2(I):
+def karpathy_prepro(I):
+    I = np.mean(I, axis=2)
+    I = I / 255.0
     """ prepro 210x160 frame into 80x80 frame """
     I = I[34:194]  # crop
     I = I[::2, ::2]  # downsample by factor of 2
@@ -11,38 +13,67 @@ def prepro2(I):
     I[I > 0.4] = 1 # everything else (paddles, ball) just set to 1
     return I.astype(np.float)
 
-def prepro(o):
-    o = np.mean(o, axis=2)
-    o = o / 255.0
+def pong_prepro(o):
+    #o[:24] = 0  # black out score area
+    o = rgb2yuv(o)[:, :, 0]  # extract Y (between 0 and 1)
+    # mode='F': floating-point pixels
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
     return o
 
-class Recorder(Wrapper):
-    def __init__(self, env):
-        super(Recorder, self).__init__(env)
-        self.buffer = []
-        self.flush_n_steps = 10000
+def prepro_a(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o = o[::2, ::2]  # downsample by factor of 2
+    return o
 
-    def _step(self, action):
-        observation, reward, done, info = self.env.step(action)
-        tup = (action, observation, reward)
-        self.buffer.append(tup)
+def prepro_b(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    return o
 
-        if len(self.buffer) % self.flush_n_steps == 0:
-            self.flush_buffer()
+def prepro_c(I):
+    I = np.mean(I, axis=2)
+    I = I / 255.0
+    I = I[34:194]  # crop
+    I[I <= 0.4] = 0 # erase background
+    I[I > 0.4] = 1 # everything else (paddles, ball) just set to 1
+    I = imresize(I, (84, 84), interp='bilinear', mode='F')
+    return I
 
-        return observation, reward, done, info
+def prepro_alpha(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    return o
 
-    def flush_buffer(self):
-        print("Flushing experience buffer...")
-        with open('experience.pickle', 'wb') as f:
-            pickle.dump(self.buffer, f)
+def prepro_beta(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o[o < 0.4] = 0
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    return o
 
+def prepro_gamma(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o[o >= 0.4] = 1
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    return o
+
+def prepro_delta(o):
+    o = rgb2yuv(o)[:, :, 0]
+    o = o[34:194]
+    o[o < 0.4] = 0
+    o[o >= 0.4] = 1
+    o = imresize(o, (84, 84), interp='bilinear', mode='F')
+    return o
 
 class EnvWrapper():
-    def __init__(self, env, pool=False, frameskip=1, prepro2=None):
+    def __init__(self, env, pool=False, frameskip=1, prepro=None):
         self.env = env
         self.pool = pool
-        self.prepro2 = prepro2
+        self.prepro = prepro
         # 1 = don't skip
         # 2 = skip every other frame
         self.frameskip = frameskip
@@ -50,20 +81,11 @@ class EnvWrapper():
         # gym.utils.play() wants these two
         self.observation_space = env.observation_space
         self.unwrapped = env.unwrapped
-        self.buffer = []
-        self.flush_n_steps = 10000
-
-    def flush_buffer(self):
-        print("Flushing experience buffer...")
-        with open('experience.pickle', 'wb') as f:
-            pickle.dump(self.buffer, f)
 
     def reset(self):
         o = self.env.reset()
         self.prev_o = o
-        o = prepro(o)
-        if self.prepro2 is not None:
-            o = self.prepro2(o)
+        o = self.prepro(o)
         return o
 
     def step(self, a):
@@ -84,13 +106,10 @@ class EnvWrapper():
                 o = np.maximum(o_raw, self.prev_o)
                 self.prev_o = o_raw
             i += 1
-        o_noprepro = np.copy(o)
-        o = prepro(o)
-        if self.prepro2 is not None:
-            o = self.prepro2(o)
+        o = self.prepro(o)
         r = sum(rs)
         info = None
-        return o, r, done, info, o_noprepro
+        return o, r, done, info
 
     def render(self):
         self.env.render()
