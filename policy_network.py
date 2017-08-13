@@ -28,21 +28,27 @@ class Network:
                 filters=32,
                 kernel_size=8,
                 strides=4,
-                activation=tf.nn.relu)
+                activation=tf.nn.relu,
+                kernel_initializer=tf.contrib.keras.initializers.he_uniform(),
+                bias_initializer=tf.constant_initializer(0.1))
 
         x = tf.layers.conv2d(
                 inputs=x,
                 filters=64,
                 kernel_size=4,
                 strides=2,
-                activation=tf.nn.relu)
+                activation=tf.nn.relu,
+                kernel_initializer=tf.contrib.keras.initializers.he_uniform(),
+                bias_initializer=tf.constant_initializer(0.1))
 
         x = tf.layers.conv2d(
                 inputs=x,
                 filters=64,
                 kernel_size=3,
                 strides=1,
-                activation=tf.nn.relu)
+                activation=tf.nn.relu,
+                kernel_initializer=tf.contrib.keras.initializers.he_uniform(),
+                bias_initializer=tf.constant_initializer(0.1))
 
         w, h, f = x.shape[1:]
         x = tf.reshape(x, [-1, int(w * h * f)])
@@ -50,12 +56,16 @@ class Network:
         x = tf.layers.dense(
                 inputs=x,
                 units=512,
-                activation=tf.nn.relu)
+                activation=tf.nn.relu,
+                kernel_initializer=tf.contrib.keras.initializers.he_uniform(),
+                bias_initializer=tf.constant_initializer(0.1))
 
         a_logits = tf.layers.dense(
-        inputs=x,
-        units=N_ACTIONS,
-        activation=None)
+            inputs=x,
+            units=N_ACTIONS,
+            activation=None,
+            kernel_initializer=tf.contrib.keras.initializers.he_uniform(),
+            bias_initializer=tf.constant_initializer(0.1))
 
         self.a_softmax = tf.nn.softmax(a_logits)
 
