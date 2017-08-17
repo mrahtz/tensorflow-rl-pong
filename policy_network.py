@@ -45,7 +45,7 @@ class Network:
             labels=self.sampled_actions,
             predictions=self.up_probability,
             weights=self.advantage)
-        optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
         self.train_op = optimizer.minimize(self.loss)
 
         tf.global_variables_initializer().run()
