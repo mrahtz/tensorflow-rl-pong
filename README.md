@@ -18,6 +18,29 @@ saved every so often (see `--checkpoint_every_n_episodes`).
 Run with `--load_checkpoint --render` to see how an AI trained on ~8,000 episode
 plays.
 
+## Understanding The Code
+
+### pong.py
+
+* Imports and Arguments: Necessary libraries are imported and command line arguments are set up to tweak hyperparameters.
+* Constants: Constants for the actions UP and DOWN are defined along with a dictionary to map actions to policy network outputs.
+* prepro Function: Preprocesses the 210x160x3 uint8 game frame into a simplified 80x80 1D float vector to reduce complexity.
+* discount_rewards Function: Computes discounted rewards over a reward sequence to prioritize more immediate rewards.
+* Environment Setup: Initializes the Gym environment for Pong and sets up the policy network.
+* Training Loop: A continuous loop that represents the training process, where each iteration corresponds to one game episode.
+* Rendering: If args.render is true, the game gets rendered to the screen.
+* Policy Execution: The policy network predicts the probability of moving UP, a random action is sampled, the action is performed in the environment, and the state, action, reward tuple is recorded.
+* Training Procedure: Every args.batch_size_episodes, the policy network is trained with the collected state, action, reward tuples.
+
+### policy_network.py
+
+* Network Class: The main policy network class which handles TensorFlow session, network architecture, saving/loading checkpoints, and training.
+* Initialization: Sets up a simple two-layer neural network with ReLU activation, and a sigmoid output layer.
+* forward_pass Method: Makes a forward pass through the network to get the probability of moving UP.
+* Train Method: This method trains the network using a log loss function to encourage taking actions that result in winning and discourage actions that result in loss. Adam optimizer is used for minimizing loss.
+* Checkpointing: Functions load_checkpoint and save_checkpoint are available to save and load training progress.
+
+
 ## Vocabulary
 
 * 'Round': one match, in which one player gains a point
