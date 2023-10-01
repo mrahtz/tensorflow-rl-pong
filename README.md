@@ -15,6 +15,25 @@ First, install OpenAI Gym and TensorFlow.
 Run without any arguments to train the AI from scratch. Checkpoints will be
 saved every so often (see `--checkpoint_every_n_episodes`).
 
+## installing Gym
+OpenAI Gym provides an easy-to-use suite of reinforcement learning tasks. To install Gym, you will need a Python environment setup. It's recommended to use Python 3.5 or later. Follow the steps below to install Gym:
+* First, ensure that you have Python installed on your machine. You can download Python from [here](https://www.python.org/downloads/).
+* Once Python is installed, open your terminal or command prompt.
+* Use pip to install gym by running the following command:
+``` bash
+pip install gym
+```
+
+### Installing TensorFlow
+TensorFlow is an open-source machine learning framework developed by Google. Here's how to install TensorFlow on your machine:
+* Ensure that you have Python installed on your machine. TensorFlow supports Python 3.6 to 3.9.
+* Open your terminal or command prompt.
+* To install TensorFlow, run the following command:
+  
+``` bash
+pip install tensorflow
+```
+
 Run with `--load_checkpoint --render` to see how an AI trained on ~8,000 episode
 plays.
 
